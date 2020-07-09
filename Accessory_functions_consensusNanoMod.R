@@ -344,14 +344,37 @@ analysis_significant_positions <- function (list_significant, fasta_file, output
     intersect_12 <- c()
     intersect_13 <- c()
     intersect_14 <- c()
-    intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], maxgap = 4)
-    intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
+
+    if (n2 > n3) {
+      intersect_23 <- subsetByOverlaps(grTombo[[1]], grNanopolish[[1]], maxgap = 4)
+    }  else {
+      intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], maxgap = 4)
+    }
+    
+    if (n2 > n4) {
+      intersect_24 <- subsetByOverlaps(grNanocompore[[1]], grNanopolish[[1]], maxgap = 4)
+    } else {
+      intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+    
+    if (n3 > n4) {
+      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
+    } else {
+      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+    
     intersect_123 <- c()
     intersect_124 <- c()
     intersect_134 <- c()
     intersect_234 <- subsetByOverlaps(intersect_23, grNanocompore[[1]],  maxgap = 4)
     intersect_1234 <- c()
+    
+    #Venn Diagram:  
+    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
+    draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+                      length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
+    
     
   } else if (n1 != 0 & n2 != 0 & n3 == 0 & n4 != 0 ) {
     intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
@@ -372,12 +395,25 @@ analysis_significant_positions <- function (list_significant, fasta_file, output
     intersect_14 <- c()
     intersect_23 <- c()
     intersect_24 <- c()
-    intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
+    
+    if (n3 > n4) {
+      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
+    } else {
+      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+    
     intersect_123 <- c()
     intersect_124 <- c()
     intersect_134 <- c()
     intersect_234 <- c()
     intersect_1234 <- c()
+    
+    #Venn Diagram:  
+    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
+    draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+                      length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
+    
     
   } else if (n3 == 0 & n4 == 0) {
     intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
@@ -406,26 +442,63 @@ analysis_significant_positions <- function (list_significant, fasta_file, output
     intersect_1234 <-  c()
       
   } else {
-    intersect_12 <- subsetByOverlaps(grEpinano[[1]], grNanopolish[[1]], maxgap = 4)
-    intersect_13 <- subsetByOverlaps(grTombo[[1]], grEpinano[[1]], maxgap = 4)
-    intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_23 <- subsetByOverlaps(grTombo[[1]], grNanopolish[[1]], maxgap = 4)
-    intersect_24 <- subsetByOverlaps(grNanocompore[[1]], grNanopolish[[1]], maxgap = 4)
-    intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
+    
+    if (n1 > n2) {
+      intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
+    } else {
+      intersect_12 <- subsetByOverlaps(grEpinano[[1]], grNanopolish[[1]], maxgap = 4)
+    }
+    
+    if (n1 > n3) {
+      intersect_13 <- subsetByOverlaps(grTombo[[1]], grEpinano[[1]], maxgap = 4)
+    } else {
+      intersect_13 <- subsetByOverlaps(grEpinano[[1]], grTombo[[1]], maxgap = 4)
+    }
+    
+    if (n1 > n4) {
+      intersect_14 <- subsetByOverlaps(grNanocompore[[1]], grEpinano[[1]], maxgap = 4)
+    } else {
+      intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+
+    if (n2 > n3) {
+      intersect_23 <- subsetByOverlaps(grTombo[[1]], grNanopolish[[1]], maxgap = 4)
+    }  else {
+      intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], maxgap = 4)
+    }
+    
+    if (n2 > n4) {
+      intersect_24 <- subsetByOverlaps(grNanocompore[[1]], grNanopolish[[1]], maxgap = 4)
+    } else {
+      intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+    
+    if (n3 > n4) {
+      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
+    } else {
+      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
+    }
+    
     intersect_123 <- subsetByOverlaps(intersect_12, grTombo[[1]], maxgap = 4)
     intersect_124 <- subsetByOverlaps(intersect_12, grNanocompore[[1]], maxgap = 4)
     intersect_134 <- subsetByOverlaps(intersect_13, grNanocompore[[1]], maxgap = 4)
-    intersect_234 <- subsetByOverlaps(intersect_23, grNanocompore[[1]],  maxgap = 4)
-    intersect_1234 <- subsetByOverlaps(intersect_134, intersect_234, maxgap = 4)
+    intersect_234 <- subsetByOverlaps(intersect_23, grNanocompore[[1]], maxgap = 4)
+    
+    if (length(intersect_12) > length(intersect_34)) {
+      intersect_1234 <- subsetByOverlaps(intersect_34, intersect_12, maxgap = 4)
+    } else {
+      intersect_1234 <- subsetByOverlaps(intersect_12, intersect_34, maxgap = 4)
+    }
+    
+    #Venn Diagram:  
+    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
+    draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
+                      length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
   
   }
     
-  #Venn Diagram:  
-  print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-          length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
-  draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-                    length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
-  
+    
   #Output plain text final result: 
   supported_by_2 <- list(intersect_12, intersect_13, intersect_14, intersect_23, intersect_24, intersect_34)
   supported_by_3 <- list(intersect_123, intersect_124, intersect_134, intersect_234)
