@@ -191,10 +191,62 @@ barplot_plotting <- function (list_plotting, list_significant, output_name){
           geom_bar(data=subset(initial_df, Modified_ZScore > 2.5), stat = "identity", width=1) + 
           scale_fill_gradient(low="#dcdcdd", 
                               high="#ff0000") + 
-          #geom_text_repel(data=putative_positions, aes(Position, Difference, label=Position,size=3), segment.size  = 0.4,segment.color = "grey50")+
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=20),
                             axis.text = element_text(size = 20), strip.text.y = element_text(size = 20)) + 
           facet_grid(sample_f ~ . , scales="fixed") )
+  dev.off()
+  
+}
+
+extract_length_from_GRobjects <- function(GRange_object) {
+  
+  if (isEmpty(GRange_object)==TRUE){
+    n_length <- 0
+  } else {
+    n_length <- elementNROWS(GRange_object)
+  }
+  
+  return(n_length)
+  
+}
+
+overlapping_GRobjects <- function(GRange_object_1, GRange_object_2, length_object1, length_object2) {
+  if (length_object1 > length_object2) {
+    intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap = 1)
+  } else {
+    intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap = 1)
+  }
+  
+  return(intersect_object)
+  
+}
+
+draw_pairwise_venn_diagram <- function (group_1, group_2, intersect_12, groups, output_name){
+  
+  #Draw Venn Diagram:
+  grid.newpage()
+  venn.plot <- draw.pairwise.venn(group_1, group_2, intersect_12, 
+                                  category = groups, fill = c("darksalmon", "dodgerblue"), cat.pos = c(0, 0), alpha = 0.5
+  )
+  
+  # Writing to file
+  png(filename = paste(output_name,'VennDiagram.png', sep="_"))
+  grid.draw(venn.plot)
+  dev.off()
+  
+}
+
+draw_triple_venn_diagram <- function (group_1, group_2, group_3, intersect_12, intersect_13, intersect_23, intersect_123, groups, output_name){
+  
+  #Draw Venn Diagram:
+  grid.newpage()
+  venn.plot <- draw.triple.venn(group_1, group_2, group_3, intersect_12, intersect_23, intersect_13, 
+                              intersect_123, category = groups, fill = c("darksalmon", "dodgerblue", "lightseagreen"), cat.pos = c(0, 0, 0), alpha = 0.5
+  )
+  
+  # Writing to file
+  png(filename = paste(output_name,'VennDiagram.png', sep="_"))
+  grid.draw(venn.plot)
   dev.off()
   
 }
@@ -251,60 +303,78 @@ extract_kmers <- function (bedfile, fasta) {
   
 }
 
-merging_data_per_kmer <- function (data) {
+#merging_data_per_kmer <- function (data) {
   
   #Merge data from the same kmer:
-  data$Ref <- paste(data$Chr, data$Start, sep="_")
-  final_data <- data.frame()
-  for (i in 1:nrow(data)){
-    if (i != nrow(data)) {
-      if (data$Ref[i] != data$Ref[i+1]) {
-        final_data <- rbind(final_data, data[i,])
-
-      }
-    } else {
-      final_data <- rbind(final_data, data[i,])
-    }
-  }
+#  data$Ref <- paste(data$Chr, data$Start, sep="_")
+#  final_data <- data.frame()
+#  for (i in 1:nrow(data)){
+#    if (i != nrow(data)) {
+#      if (data$Ref[i] != data$Ref[i+1]) {
+#        final_data <- rbind(final_data, data[i,])
+#
+#      }
+#    } else {
+#      final_data <- rbind(final_data, data[i,])
+#    }
+#  }
   
-  return(final_data[,c(1,2,3,4,5,6,7,8,9)])
-}
+#  return(final_data[,c(1,2,3,4,5,6,7,8,9)])
+#}
 
 extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) {
   
   #Create vectors to store software data:
-  epinano_algorithm <- c()
-  nanopolish_algorithm <- c()
-  tombo_algorithm <- c()
-  nanocompore_algorithm <- c()
+  epinano_rawScore <- c()
+  nanopolish_rawScore <- c()
+  tombo_rawScore <- c()
+  nanocompore_rawScore <- c()
+  
+  epinano_modifiedScore <- c()
+  nanopolish_modifiedScore <- c()
+  tombo_modifiedScore <- c()
+  nanocompore_modifiedScore <- c()
   
   #Parse data into a data frame:
   positions_df <- data.frame(start(GRange_supported_kmers), end(GRange_supported_kmers))
   colnames(positions_df) <- c('Start', 'End')
   positions_df$Chr <- seqlevels(GRange_supported_kmers)
   positions_df <- positions_df[,c(3,1,2)]
-  
+
   for (single_pos in positions_df$Start){
     position <- single_pos+2
-    epinano_algorithm <- c(epinano_algorithm, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 5])
-    nanopolish_algorithm <- c(nanopolish_algorithm, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 5])
+    epinano_rawScore <- c(epinano_rawScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 3])
+    epinano_modifiedScore <- c(epinano_modifiedScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 5])
     
-    if (length(list_plotting[[3]][which(list_plotting[[3]]$Position == position), 5]) == 0) {
-      tombo_algorithm <- c(tombo_algorithm, 'NA')
+    nanopolish_rawScore <- c(nanopolish_rawScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 3])
+    nanopolish_modifiedScore <- c(nanopolish_modifiedScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 5])
+    
+    
+    if (length(list_plotting[[3]][which(list_plotting[[3]]$Position == position), 3]) == 0) {
+      tombo_rawScore <- c(tombo_rawScore, 'NA')
+      tombo_modifiedScore <- c(tombo_modifiedScore, 'NA')
       
     } else {
-      tombo_algorithm <- c(tombo_algorithm, list_plotting[[3]][which(list_plotting[[3]]$Position == position), 5])
+      tombo_rawScore <- c(tombo_rawScore, list_plotting[[3]][which(list_plotting[[3]]$Position == position), 3])
+      tombo_modifiedScore <- c(tombo_modifiedScore, list_plotting[[3]][which(list_plotting[[3]]$Position == position), 5])
       
     }
 
-    nanocompore_algorithm <- c(nanocompore_algorithm, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 5])
+    nanocompore_rawScore <- c(nanocompore_rawScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 3])
+    nanocompore_modifiedScore <- c(nanocompore_modifiedScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 5])
+    
   }
   
   #Add data to the final dataframe:
-  positions_df$Epinano <- epinano_algorithm
-  positions_df$Nanopolish <- nanopolish_algorithm
-  positions_df$Tombo <- tombo_algorithm
-  positions_df$Nanocompore <- nanocompore_algorithm
+  positions_df$Epinano_RawScore <- epinano_rawScore
+  positions_df$Nanopolish_RawScore <- nanopolish_rawScore
+  positions_df$Tombo_RawScore <- tombo_rawScore
+  positions_df$Nanocompore_RawScore <- nanocompore_rawScore
+  
+  positions_df$Epinano_Score <- epinano_modifiedScore
+  positions_df$Nanopolish_Score <- nanopolish_modifiedScore
+  positions_df$Tombo_Score <- tombo_modifiedScore
+  positions_df$Nanocompore_Score <- nanocompore_modifiedScore
   
   return(positions_df)
 }
@@ -314,11 +384,9 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name) {
   kmer_data <- extract_kmers(all_ranges, fasta_file)
   all_ranges$Kmer <- kmer_data[[1]]
   all_ranges$RRACH_motif <- kmer_data[[2]]
-  all_ranges <- all_ranges[order(all_ranges$Start, decreasing = FALSE),]
-  
+
   #Merging data per kmer: 
-  final <- merging_data_per_kmer(all_ranges)
-  write.table(final, file = output_name, sep = '\t', row.names = FALSE)
+  write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
 }
 
 analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position) {
@@ -365,228 +433,221 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     }
     
   }
-
-  #Perform intersections:
+  
+  ##Perform intersections:
+  #Check how many elements are in each GRange object and if it is null, create an empty one:
   print('Perform intersections')
-  n1 <- length(grEpinano[[1]])
-  n2 <- length(grNanopolish[[1]])
-  n3 <- length(grTombo[[1]])
-  n4 <- length(grNanocompore[[1]])
+  if (is.null(grEpinano)==TRUE){
+    grEpinano <- GRanges()
+    n1 <- 0
+  } else {
+    n1 <- elementNROWS(grEpinano)
+  }
+  
+  if (is.null(grNanopolish)==TRUE){
+    grNanopolish <- GRanges()
+    n2 <- 0
+  } else {
+    n2 <- elementNROWS(grNanopolish)
+  }
+  
+  if (is.null(grTombo)==TRUE){
+    grTombo <- GRanges()
+    n3 <- 0
+  } else {
+    n3 <- elementNROWS(grTombo)
+  }
+  
+  if (is.null(grNanocompore)==TRUE){
+    grNanocompore <- GRanges()
+    n4 <- 0
+  } else {
+    n4 <- elementNROWS(grNanocompore)
+  }
+  
   print(c(n1,n2,n3,n4))
   
   if (n1 != 0 & n2 != 0 & n3 != 0 & n4 == 0 ) {
-    intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
-    intersect_13 <- subsetByOverlaps(grTombo[[1]], grEpinano[[1]], maxgap = 4)
-    intersect_14 <- c()
-    intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], maxgap = 4)
-    intersect_24 <- c()
-    intersect_34 <- c()
-    intersect_123 <- subsetByOverlaps(intersect_12, grTombo[[1]], maxgap = 4)
-    intersect_124 <- c()
-    intersect_134 <- c()
-    intersect_234 <- c()
-    intersect_1234 <- c()
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
+    length_intersect_12 <- extract_length_from_GRobjects(intersect_12)
+    
+    intersect_13 <- overlapping_GRobjects(grEpinano, grTombo, n1, n3)
+    length_intersect_13 <- extract_length_from_GRobjects(intersect_13)
+    
+    intersect_23 <- overlapping_GRobjects(grNanopolish, grTombo, n2, n3)
+    length_intersect_23 <- extract_length_from_GRobjects(intersect_23)
+
+    intersect_123 <- overlapping_GRobjects(intersect_12, grTombo, length_intersect_12, n3)
+    length_intersect_123 <- extract_length_from_GRobjects(intersect_123)
+
+    #Venn Diagram:  
+    print(c(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123))
+    methods_name <-  c('Epinano', 'Nanopolish', 'Tombo')
+    draw_triple_venn_diagram(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123, methods_name, output_name)
+  
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_23), unlist(intersect_123)))
     
   } else if (n1 != 0 & n2 == 0 & n3 != 0 & n4 != 0 ) {
-    intersect_12 <- c()
-    intersect_13 <- subsetByOverlaps(grEpinano[[1]], grTombo[[1]], maxgap = 4)
-    intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_23 <- c()
-    intersect_24 <- c()
-    intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
-    intersect_123 <- c()
-    intersect_124 <- c()
-    intersect_134 <- subsetByOverlaps(intersect_13, grNanocompore[[1]], maxgap = 4)
-    intersect_234 <- c()
-    intersect_1234 <- c()
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_13 <- overlapping_GRobjects(grEpinano, grTombo, n1, n3)
+    length_intersect_13 <- extract_length_from_GRobjects(intersect_13)
+                                                         
+    intersect_14 <- overlapping_GRobjects(grEpinano, grNanocompore, n1, n4)
+    length_intersect_14 <- extract_length_from_GRobjects(intersect_14)                                                     
+    
+    intersect_34 <- overlapping_GRobjects(grTombo, grNanocompore, n3, n4)
+    length_intersect_34 <- extract_length_from_GRobjects(intersect_34) 
+    
+    intersect_134 <- overlapping_GRobjects(intersect_13, grNanocompore, length_intersect_13, n4)
+    length_intersect_134 <- extract_length_from_GRobjects(intersect_134)
+    
+    #Venn Diagram:  
+    print(c(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134))
+    methods_name <-  c('Epinano', 'Tombo', 'Nanocompore')
+    draw_triple_venn_diagram(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unique(c(unlist(intersect_13), unlist(intersect_14), unlist(intersect_34), unlist(intersect_134)))
     
   } else if (n1 == 0 & n2 != 0 & n3 != 0 & n4 != 0 ) {
-    intersect_12 <- c()
-    intersect_13 <- c()
-    intersect_14 <- c()
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_23 <- overlapping_GRobjects(grNanopolish, grTombo, n2, n3)
+    length_intersect_23 <- extract_length_from_GRobjects(intersect_23)
 
-    if (n2 > n3) {
-      intersect_23 <- subsetByOverlaps(grTombo[[1]], grNanopolish[[1]], maxgap = 4)
-    }  else {
-      intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], maxgap = 4)
-    }
+    intersect_24 <- overlapping_GRobjects(grNanopolish, grNanocompore, n2, n4)
+    length_intersect_24 <- extract_length_from_GRobjects(intersect_24)
     
-    if (n2 > n4) {
-      intersect_24 <- subsetByOverlaps(grNanocompore[[1]], grNanopolish[[1]], maxgap = 4)
-    } else {
-      intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], maxgap = 4)
-    }
+    intersect_34 <- overlapping_GRobjects(grTombo, grNanocompore, n3, n4)
+    length_intersect_34 <- extract_length_from_GRobjects(intersect_34)
     
-    if (n3 > n4) {
-      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
-    } else {
-      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
-    }
-    
-    intersect_123 <- c()
-    intersect_124 <- c()
-    intersect_134 <- c()
-    intersect_234 <- subsetByOverlaps(intersect_23, grNanocompore[[1]],  maxgap = 4)
-    intersect_1234 <- c()
+    intersect_234 <- overlapping_GRobjects(intersect_23, grNanocompore, length_intersect_23, n4)
+    length_intersect_234 <- extract_length_from_GRobjects(intersect_234)
     
     #Venn Diagram:  
-    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
-    draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-                      length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
+    print(c(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234))
+    methods_name <-  c('Nanopolish', 'Tombo', 'Nanocompore')
+    draw_triple_venn_diagram(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234, methods_name, output_name)
     
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unique(c(unlist(intersect_23), unlist(intersect_24), unlist(intersect_34), unlist(intersect_234)))
     
   } else if (n1 != 0 & n2 != 0 & n3 == 0 & n4 != 0 ) {
-    intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
-    intersect_13 <- c()
-    intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_23 <- c()
-    intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_34 <- c()
-    intersect_123 <- c()
-    intersect_124 <- subsetByOverlaps(intersect_12, grNanocompore[[1]], maxgap = 4)
-    intersect_134 <- c()
-    intersect_234 <- c()
-    intersect_1234 <- c()
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
+    length_intersect_12 <- extract_length_from_GRobjects(intersect_12)
     
-  } else if (n1 == 0 & n2 == 0) {
-    intersect_12 <- c()
-    intersect_13 <- c()
-    intersect_14 <- c()
-    intersect_23 <- c()
-    intersect_24 <- c()
-    
-    if (n3 > n4) {
-      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], maxgap = 4)
-    } else {
-      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], maxgap = 4)
-    }
-    
-    intersect_123 <- c()
-    intersect_124 <- c()
-    intersect_134 <- c()
-    intersect_234 <- c()
-    intersect_1234 <- c()
+    intersect_14 <- overlapping_GRobjects(grEpinano, grNanocompore, n1, n4)
+    length_intersect_14 <- extract_length_from_GRobjects(intersect_14)
+
+    intersect_24 <- overlapping_GRobjects(grNanopolish, grNanocompore, n2, n4)
+    length_intersect_24 <- extract_length_from_GRobjects(intersect_24)
+
+    intersect_124 <- overlapping_GRobjects(intersect_12, grNanocompore, length_intersect_12, n4)
+    length_intersect_124 <- extract_length_from_GRobjects(intersect_124)
     
     #Venn Diagram:  
-    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
-    draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-                      length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
+    print(c(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124))
+    methods_name <-  c('Epinano', 'Nanopolish', 'Nanocompore')
+    draw_triple_venn_diagram(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124, methods_name, output_name)
     
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_14), unlist(intersect_24), unlist(intersect_124)))
+
+  } else if (n1 == 0 & n2 == 0) {
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_34 <- overlapping_GRobjects(grTombo, grNanocompore, n3, n4)
+    length_intersect_34 <- extract_length_from_GRobjects(intersect_34)
+    
+    #Venn Diagram:  
+    print(c(n3, n4, length_intersect_34))
+    methods_name <-  c('Tombo', 'Nanocompore')
+    draw_pairwise_venn_diagram(n3, n4, length_intersect_34, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unlist(intersect_34)
     
   } else if (n3 == 0 & n4 == 0) {
-    intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], maxgap = 4)
-    intersect_13 <- c()
-    intersect_14 <- c()
-    intersect_23 <- c()
-    intersect_24 <- c()
-    intersect_34 <- c()
-    intersect_123 <- c()
-    intersect_124 <- c()
-    intersect_134 <- c()
-    intersect_234 <- c()
-    intersect_1234 <- c()
-    
-  } else if (n2 == 0 & n3 == 0) { 
-    intersect_12 <-  c()
-    intersect_13 <-  c()
-    intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], maxgap = 4)
-    intersect_23 <-  c()
-    intersect_24 <-  c()
-    intersect_34 <-  c()
-    intersect_123 <-  c()
-    intersect_124 <-  c()
-    intersect_134 <-  c()
-    intersect_234 <-  c()
-    intersect_1234 <-  c()
-      
-  } else {
-    
-    if (n1 > n2) {
-      intersect_12 <- subsetByOverlaps(grNanopolish[[1]], grEpinano[[1]], minoverlap = 1)
-    } else {
-      intersect_12 <- subsetByOverlaps(grEpinano[[1]], grNanopolish[[1]], minoverlap = 1)
-    }
-    
-    if (n1 > n3) {
-      intersect_13 <- subsetByOverlaps(grTombo[[1]], grEpinano[[1]], minoverlap = 1)
-    } else {
-      intersect_13 <- subsetByOverlaps(grEpinano[[1]], grTombo[[1]], minoverlap = 1)
-    }
-    
-    if (n1 > n4) {
-      intersect_14 <- subsetByOverlaps(grNanocompore[[1]], grEpinano[[1]], minoverlap = 1)
-    } else {
-      intersect_14 <- subsetByOverlaps(grEpinano[[1]], grNanocompore[[1]], minoverlap = 1)
-    }
-
-    if (n2 > n3) {
-      intersect_23 <- subsetByOverlaps(grTombo[[1]], grNanopolish[[1]], minoverlap = 1)
-    }  else {
-      intersect_23 <- subsetByOverlaps(grNanopolish[[1]], grTombo[[1]], minoverlap = 1)
-    }
-    
-    if (n2 > n4) {
-      intersect_24 <- subsetByOverlaps(grNanocompore[[1]], grNanopolish[[1]], minoverlap = 1)
-    } else {
-      intersect_24 <- subsetByOverlaps(grNanopolish[[1]], grNanocompore[[1]], minoverlap = 1)
-    }
-    
-    if (n3 > n4) {
-      intersect_34 <- subsetByOverlaps(grNanocompore[[1]], grTombo[[1]], minoverlap = 1)
-    } else {
-      intersect_34 <- subsetByOverlaps(grTombo[[1]], grNanocompore[[1]], minoverlap = 1)
-    }
-    
-    if (length(intersect_12) > n3) {
-      intersect_123 <- subsetByOverlaps(grTombo[[1]], intersect_12, minoverlap = 1)
-    } else {
-      intersect_123 <- subsetByOverlaps(intersect_12, grTombo[[1]], minoverlap = 1)
-    }
-
-    if (length(intersect_12) > n4) {
-      intersect_124 <- subsetByOverlaps(grNanocompore[[1]], intersect_12, minoverlap = 1)
-    } else {
-      intersect_124 <- subsetByOverlaps(intersect_12, grNanocompore[[1]], minoverlap = 1)
-    }
-    
-    if (length(intersect_13) > n4) {
-      intersect_134 <- subsetByOverlaps(grNanocompore[[1]], intersect_13, minoverlap = 1)
-    } else {
-      intersect_134 <- subsetByOverlaps(intersect_13, grNanocompore[[1]], minoverlap = 1)
-    }
-    
-    if (length(intersect_23) > n4) {
-      intersect_234 <- subsetByOverlaps(grNanocompore[[1]], intersect_23, minoverlap = 1)
-    } else {
-      intersect_234 <- subsetByOverlaps(intersect_23, grNanocompore[[1]], minoverlap = 1)
-    }
-
-    if (length(intersect_124) > length(intersect_234)) {
-      intersect_1234 <- subsetByOverlaps(intersect_234, intersect_124, minoverlap = 1)
-    } else {
-      intersect_1234 <- subsetByOverlaps(intersect_124, intersect_234, minoverlap = 1)
-    }
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
+    length_intersect_12 <- extract_length_from_GRobjects(intersect_12)
     
     #Venn Diagram:  
-    print(c(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-            length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234)))
-    #draw_venn_diagram(n1, n2, n3, n4, length(intersect_12), length(intersect_13), length(intersect_14), length(intersect_23), length(intersect_24),
-    #                  length(intersect_34), length(intersect_123), length(intersect_124), length(intersect_134), length(intersect_234), length(intersect_1234), methods_name, output_name)
+    print(c(n1, n2, length_intersect_12))
+    methods_name <-  c('Epinano', 'Nanopolish')
+    draw_pairwise_venn_diagram(n1, n2, length_intersect_12, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unlist(intersect_12)
+    
+  } else if (n2 == 0 & n3 == 0) { 
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_14 <- overlapping_GRobjects(grEpinano, grNanocompore, n1, n4)
+    length_intersect_14 <- extract_length_from_GRobjects(intersect_14)
+    
+    #Venn Diagram:  
+    print(c(n1, n4, length_intersect_14))
+    methods_name <-  c('Epinano', 'Nanocompore')
+    draw_pairwise_venn_diagram(n1, n4, length_intersect_14, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unlist(intersect_14)
+    
+  } else {
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
+    length_intersect_12 <- extract_length_from_GRobjects(intersect_12)
+    
+    intersect_13 <- overlapping_GRobjects(grEpinano, grTombo, n1, n3)
+    length_intersect_13 <- extract_length_from_GRobjects(intersect_13)
+    
+    intersect_14 <- overlapping_GRobjects(grEpinano, grNanocompore, n1, n4)
+    length_intersect_14 <- extract_length_from_GRobjects(intersect_14)
+    
+    intersect_23 <- overlapping_GRobjects(grNanopolish, grTombo, n2, n3)
+    length_intersect_23 <- extract_length_from_GRobjects(intersect_23)
+    
+    intersect_24 <- overlapping_GRobjects(grNanopolish, grNanocompore, n2, n4)
+    length_intersect_24 <- extract_length_from_GRobjects(intersect_24)
+    
+    intersect_34 <- overlapping_GRobjects(grTombo, grNanocompore, n3, n4)
+    length_intersect_34 <- extract_length_from_GRobjects(intersect_34)
+    
+    intersect_123 <- overlapping_GRobjects(intersect_12, grTombo, length_intersect_12, n3)
+    length_intersect_123 <- extract_length_from_GRobjects(intersect_123)
+    
+    intersect_124 <- overlapping_GRobjects(intersect_12, grNanocompore, length_intersect_12, n4)
+    length_intersect_124 <- extract_length_from_GRobjects(intersect_124)
+
+    intersect_134 <- overlapping_GRobjects(intersect_13, grNanocompore, length_intersect_13, n4)
+    length_intersect_134 <- extract_length_from_GRobjects(intersect_134)
+    
+    intersect_234 <- overlapping_GRobjects(intersect_23, grNanocompore, length_intersect_23, n4)
+    length_intersect_234 <- extract_length_from_GRobjects(intersect_234)
+    
+    intersect_1234 <- overlapping_GRobjects(intersect_12, intersect_34, length_intersect_12, length_intersect_34)
+    length_intersect_1234 <- extract_length_from_GRobjects(intersect_1234)
+
+    #Venn Diagram:  
+    print(c(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
+            length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234))
+    draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
+                      length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_14), unlist(intersect_23), unlist(intersect_24),
+                                unlist(intersect_34), unlist(intersect_123), unlist(intersect_124), unlist(intersect_134), unlist(intersect_234), unlist(intersect_1234)))
   
   }
   
   ##Kmer analysis: 
-  #Create an GRange for all kmers across the chromosome:
+  #Analysis of all kmers across the chromosome:
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
   all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting)
   kmer_analysis(all_kmers, fasta_file, paste(output_name,'Raw_kmers.txt'))
-  
-  #Output plain text final result - Supported kmers: 
-  supported_kmers <- unique(c(intersect_12, intersect_13, intersect_14, intersect_23, intersect_24, intersect_34,
-                        intersect_123, intersect_124, intersect_134, intersect_234))
 
+  #Analyse the supported kmers:
   all_ranges <- extracting_modified_ZScores(supported_kmers, list_plotting) 
   kmer_analysis(all_ranges, fasta_file, paste(output_name,'Supported_kmers.txt'))
   
