@@ -76,7 +76,7 @@ if (args$Subsetting==TRUE) {
 
 if(args$Plotting==TRUE){
   print('Plotting across all methods')
-  barplot_plotting(list_plotting, list_significant, args$Output_name)
+  barplot_plotting(list_plotting, list_significant, args$Output_name, args$MZS_thr)
 }
 
 print('Overlap analysis and Venn Diagram')

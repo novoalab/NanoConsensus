@@ -115,7 +115,7 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
   
   #Extract significant positions and kmers and then perform the intersection:
   positions <- subset(sample, Modified_ZScore > MZS_thr)
-  kmer <- subset(sample, Modified_ZScore_kmer > MZS_thr)
+  kmer <- subset(sample, Modified_ZScore_kmer > (MZS_thr))
   
   significant_positions <- join(kmer, positions, by = 'Reference', type = "inner")
   significant_positions <- significant_positions[,c(1,3,9,8,11)]
@@ -164,7 +164,7 @@ subset_by_chr <- function(list_methods, chr){
  return(list_methods)
 }
 
-barplot_plotting <- function (list_plotting, list_significant, output_name){
+barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr){
   
   #Rbind all data - already in long format: 
   initial_join <- TRUE
@@ -185,10 +185,10 @@ barplot_plotting <- function (list_plotting, list_significant, output_name){
   
   #Plotting:
   png(file=paste(output_name,".png", sep = ""),bg = "transparent", height=1480, width = 2640)
-  plot(ggplot(initial_df, aes(x=Position, y=Score, fill=Modified_ZScore)) + ggtitle(output_name) +
-          geom_bar(data=subset(initial_df, Modified_ZScore < 2.5), stat= "identity", width=1, fill = "#dcdcdd") +
+  plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
+          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=1, fill = "#dcdcdd") +
           new_scale_color() +
-          geom_bar(data=subset(initial_df, Modified_ZScore > 2.5), stat = "identity", width=1) + 
+          geom_bar(data=subset(initial_df, Modified_ZScore > MZS_thr), stat = "identity", width=1) + 
           scale_fill_gradient(low="#dcdcdd", 
                               high="#ff0000") + 
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=20),
@@ -199,8 +199,8 @@ barplot_plotting <- function (list_plotting, list_significant, output_name){
 }
 
 extract_length_from_GRobjects <- function(GRange_object) {
-  
-  if (isEmpty(GRange_object)==TRUE){
+
+  if (length(GRange_object)==0){
     n_length <- 0
   } else {
     n_length <- elementNROWS(GRange_object)
@@ -322,6 +322,10 @@ extract_kmers <- function (bedfile, fasta) {
 #  return(final_data[,c(1,2,3,4,5,6,7,8,9)])
 #}
 
+extracting_software_status <- function() {
+  
+}
+
 extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) {
   
   #Create vectors to store software data:
@@ -384,7 +388,8 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name) {
   kmer_data <- extract_kmers(all_ranges, fasta_file)
   all_ranges$Kmer <- kmer_data[[1]]
   all_ranges$RRACH_motif <- kmer_data[[2]]
-
+  all_ranges <- all_ranges[order(all_ranges$Start, decreasing = FALSE),]
+  
   #Merging data per kmer: 
   write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
 }
@@ -645,10 +650,10 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   #Analysis of all kmers across the chromosome:
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
   all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting)
-  kmer_analysis(all_kmers, fasta_file, paste(output_name,'Raw_kmers.txt'))
+  kmer_analysis(all_kmers, fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'))
 
   #Analyse the supported kmers:
   all_ranges <- extracting_modified_ZScores(supported_kmers, list_plotting) 
-  kmer_analysis(all_ranges, fasta_file, paste(output_name,'Supported_kmers.txt'))
+  kmer_analysis(all_ranges, fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
   
 }
