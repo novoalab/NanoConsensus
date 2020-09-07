@@ -212,7 +212,7 @@ extract_length_from_GRobjects <- function(GRange_object) {
   if (length(GRange_object)==0){
     n_length <- 0
   } else {
-    n_length <- elementNROWS(GRange_object)
+    n_length <- length(GRange_object)
   }
   
   return(n_length)
@@ -220,10 +220,11 @@ extract_length_from_GRobjects <- function(GRange_object) {
 }
 
 overlapping_GRobjects <- function(GRange_object_1, GRange_object_2, length_object1, length_object2) {
+  
   if (length_object1 >= length_object2) {
-    intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap = 1)
+    intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap=2)
   } else {
-    intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap = 1)
+    intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap=2)
   }
   
   return(intersect_object)
@@ -501,11 +502,11 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
           chr <- paste(elements, collapse="_")
           
         }
-        grNew <- GRanges(seqnames=chr,ranges=IRanges(start=as.integer(features[[1]][length(features[[1]])])-2, width=5))
+        grNew <- GRanges(seqnames=chr,ranges=IRanges(as.integer(features[[1]][length(features[[1]])])-2, end = as.integer(features[[1]][length(features[[1]])])+2))
         grList <- pc(grList,grNew)
-        
+
       }
-    
+      grList <- do.call(c, grList)
       assign(paste('gr',methods_name[j],sep=""), unique(grList))
     
     } else {
@@ -517,32 +518,33 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   ##Perform intersections:
   #Check how many elements are in each GRange object and if it is null, create an empty one:
   print('Perform intersections')
+  
   if (is.null(grEpinano)==TRUE){
     grEpinano <- GRanges()
     n1 <- 0
   } else {
-    n1 <- elementNROWS(grEpinano)
+    n1 <- length(grEpinano)
   }
   
   if (is.null(grNanopolish)==TRUE){
     grNanopolish <- GRanges()
     n2 <- 0
   } else {
-    n2 <- elementNROWS(grNanopolish)
+    n2 <- length(grNanopolish)
   }
   
   if (is.null(grTombo)==TRUE){
     grTombo <- GRanges()
     n3 <- 0
   } else {
-    n3 <- elementNROWS(grTombo)
+    n3 <- length(grTombo)
   }
   
   if (is.null(grNanocompore)==TRUE){
     grNanocompore <- GRanges()
     n4 <- 0
   } else {
-    n4 <- elementNROWS(grNanocompore)
+    n4 <- length(grNanocompore)
   }
   
   print(c(n1,n2,n3,n4))
@@ -715,7 +717,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
 
     intersect_134 <- overlapping_GRobjects(intersect_13, grNanocompore, length_intersect_13, n4)
     length_intersect_134 <- extract_length_from_GRobjects(intersect_134)
-    
+
     intersect_234 <- overlapping_GRobjects(intersect_23, grNanocompore, length_intersect_23, n4)
     length_intersect_234 <- extract_length_from_GRobjects(intersect_234)
     
