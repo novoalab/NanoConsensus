@@ -33,7 +33,8 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   threshold <- median(plotting_positions$Difference, na.rm = TRUE)
   
   #Calculate fold change and re-order:
-  plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
+  #plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
+  plotting_positions$Score <- plotting_positions$Difference/threshold
   plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score))/sd(plotting_positions$Score)
   
   plotting_positions <- plotting_positions[,c(1,2,5,4,6)]
@@ -74,7 +75,8 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   threshold <- median(plotting_positions$Difference, na.rm = TRUE)
   
   #Calculate fold change:
-  plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
+  #plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
+  plotting_positions$Score <- plotting_positions$Difference/threshold
   plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score))/sd(plotting_positions$Score)
   
   #Format data for plotting:
@@ -105,8 +107,10 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
   threshold_kmer <- median(sample$Statistic_kmer, na.rm = TRUE)
   
   #Calculate fold change:
-  sample$Score <- rescale((sample$Difference/threshold_position), to=c(0,1))
-  sample$Score_kmer <- rescale((sample$Statistic_kmer/threshold_kmer), to=c(0,1))
+  #sample$Score <- rescale((sample$Difference/threshold_position), to=c(0,1))
+  #sample$Score_kmer <- rescale((sample$Statistic_kmer/threshold_kmer), to=c(0,1))
+  sample$Score <- sample$Difference/threshold_position
+  sample$Score_kmer <- sample$Statistic_kmer/threshold_kmer
   sample$Modified_ZScore <- (sample$Score-median(sample$Score))/sd(sample$Score)
   sample$Modified_ZScore_kmer <- (sample$Score_kmer-median(sample$Score_kmer, na.rm = TRUE))/sd(sample$Score_kmer, na.rm = TRUE)
 
@@ -115,7 +119,7 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
   
   #Extract significant positions and kmers and then perform the intersection:
   positions <- subset(sample, Modified_ZScore > MZS_thr)
-  kmer <- subset(sample, Modified_ZScore_kmer > (MZS_thr))
+  kmer <- subset(sample, Modified_ZScore_kmer > MZS_thr)
   
   significant_positions <- join(kmer, positions, by = 'Reference', type = "inner")
   significant_positions <- significant_positions[,c(1,3,9,8,11)]
@@ -129,8 +133,8 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
   sample <- read.delim(sample_file)
   if (nrow(sample)>0) {
     #Transform metric:
-    sample$stat <- 1/(sample$GMM_logit_pvalue_context_4)
-    sample$log_stat <- log(sample$stat)
+    sample$stat <- log(sample$GMM_logit_pvalue_context_4)
+    sample$log_stat <- (sample$stat)*(-1)
     
     #Prepare plotting data:
     sample$reference <- paste(sample$ref_id, sample$pos, sep='_')
@@ -144,7 +148,8 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     threshold <- median(plotting_data$Difference, na.rm = TRUE)
 
     #Calculate fold change:
-    plotting_data$Score <- rescale((plotting_data$Difference/threshold), to=c(0,1))
+    #plotting_data$Score <- rescale((plotting_data$Difference/threshold), to=c(0,1))
+    plotting_data$Score <- plotting_data$Difference/threshold
     plotting_data$Modified_ZScore <- (plotting_data$Score-median(plotting_data$Score, na.rm = TRUE))/sd(plotting_data$Score, na.rm = TRUE)
     
     #Format data for plotting:
@@ -153,8 +158,12 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     #Extract significant positions:
     significant_positions <- subset(plotting_data, Modified_ZScore > MZS_thr)
     
-    return(list(plotting_data, significant_positions))
-  }
+  } else {
+    plotting_data <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+    significant_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+}
+  
+  return(list(plotting_data, significant_positions))
 }
 
 subset_by_chr <- function(list_methods, chr){
@@ -186,10 +195,10 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   #Plotting:
   png(file=paste(output_name,".png", sep = ""),bg = "transparent", height=1480, width = 2640)
   plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
-          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=1, fill = "#dcdcdd") +
+          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=1.5, fill = "#dcdcdd") +
           new_scale_color() +
-          geom_bar(data=subset(initial_df, Modified_ZScore > MZS_thr), stat = "identity", width=1) + 
-          scale_fill_gradient(low="#dcdcdd", 
+          geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=1.5) + 
+          scale_fill_gradient(low="#ff7f7f", 
                               high="#ff0000") + 
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=20),
                             axis.text = element_text(size = 20), strip.text.y = element_text(size = 20)) + 
@@ -211,7 +220,7 @@ extract_length_from_GRobjects <- function(GRange_object) {
 }
 
 overlapping_GRobjects <- function(GRange_object_1, GRange_object_2, length_object1, length_object2) {
-  if (length_object1 > length_object2) {
+  if (length_object1 >= length_object2) {
     intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap = 1)
   } else {
     intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap = 1)
@@ -303,30 +312,17 @@ extract_kmers <- function (bedfile, fasta) {
   
 }
 
-#merging_data_per_kmer <- function (data) {
+overwrite_NaNs <- function (input) {
+  if (is.na(input) == TRUE) {
+    out_value <- 0
+  } else {
+    out_value <- input
+  }
   
-  #Merge data from the same kmer:
-#  data$Ref <- paste(data$Chr, data$Start, sep="_")
-#  final_data <- data.frame()
-#  for (i in 1:nrow(data)){
-#    if (i != nrow(data)) {
-#      if (data$Ref[i] != data$Ref[i+1]) {
-#        final_data <- rbind(final_data, data[i,])
-#
-#      }
-#    } else {
-#      final_data <- rbind(final_data, data[i,])
-#    }
-#  }
-  
-#  return(final_data[,c(1,2,3,4,5,6,7,8,9)])
-#}
-
-extracting_software_status <- function() {
-  
+  return(out_value)
 }
 
-extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) {
+extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, MZS_thr) {
   
   #Create vectors to store software data:
   epinano_rawScore <- c()
@@ -339,6 +335,11 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) 
   tombo_modifiedScore <- c()
   nanocompore_modifiedScore <- c()
   
+  epinano_status <- c()
+  nanopolish_status <- c()
+  tombo_status <- c()
+  nanocompore_status <- c()
+  
   #Parse data into a data frame:
   positions_df <- data.frame(start(GRange_supported_kmers), end(GRange_supported_kmers))
   colnames(positions_df) <- c('Start', 'End')
@@ -347,13 +348,45 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) 
 
   for (single_pos in positions_df$Start){
     position <- single_pos+2
+    
+    ##Epinano:
     epinano_rawScore <- c(epinano_rawScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 3])
     epinano_modifiedScore <- c(epinano_modifiedScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 5])
     
-    nanopolish_rawScore <- c(nanopolish_rawScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 3])
-    nanopolish_modifiedScore <- c(nanopolish_modifiedScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 5])
+    #Loop over the kmer to find if Epinano identified it:
+    if(any(list_plotting[[1]][which(list_plotting[[1]]$Position == single_pos), 5] >= MZS_thr, 
+           list_plotting[[1]][which(list_plotting[[1]]$Position == single_pos+1), 5] >= MZS_thr,
+           list_plotting[[1]][which(list_plotting[[1]]$Position == single_pos+2), 5] >= MZS_thr,
+           list_plotting[[1]][which(list_plotting[[1]]$Position == single_pos+3), 5] >= MZS_thr,
+           list_plotting[[1]][which(list_plotting[[1]]$Position == single_pos+4), 5] >= MZS_thr)){
+      epinano_status <- c(epinano_status, 'YES')
+    } else {
+      epinano_status <- c(epinano_status, 'NO')
+    }
     
+    ##Nanopolish:
+    if (length(list_plotting[[2]][which(list_plotting[[2]]$Position == position), 3]) == 0) {
+      nanopolish_rawScore <- c(nanopolish_rawScore, 'NA')
+      nanopolish_modifiedScore <- c(nanopolish_modifiedScore, 'NA')
+      
+    } else {
+      nanopolish_rawScore <- c(nanopolish_rawScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 3])
+      nanopolish_modifiedScore <- c(nanopolish_modifiedScore, list_plotting[[2]][which(list_plotting[[2]]$Position == position), 5])
+      
+    }
     
+    #Loop over the kmer to find if Nanopolish identified it:
+    if(any(list_plotting[[2]][which(list_plotting[[2]]$Position == single_pos), 5] >= MZS_thr, 
+           list_plotting[[2]][which(list_plotting[[2]]$Position == single_pos+1), 5] >= MZS_thr,
+           list_plotting[[2]][which(list_plotting[[2]]$Position == single_pos+2), 5] >= MZS_thr,
+           list_plotting[[2]][which(list_plotting[[2]]$Position == single_pos+3), 5] >= MZS_thr,
+           list_plotting[[2]][which(list_plotting[[2]]$Position == single_pos+4), 5] >= MZS_thr)){
+      nanopolish_status <- c(nanopolish_status, 'YES')
+    } else {
+      nanopolish_status <- c(nanopolish_status, 'NO')
+    }
+    
+    ##Tombo:
     if (length(list_plotting[[3]][which(list_plotting[[3]]$Position == position), 3]) == 0) {
       tombo_rawScore <- c(tombo_rawScore, 'NA')
       tombo_modifiedScore <- c(tombo_modifiedScore, 'NA')
@@ -364,8 +397,45 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) 
       
     }
 
-    nanocompore_rawScore <- c(nanocompore_rawScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 3])
-    nanocompore_modifiedScore <- c(nanocompore_modifiedScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 5])
+    #Loop over the kmer to find if Tombo identified it:
+    if(any(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos), 5] >= MZS_thr, 
+           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+1), 5] >= MZS_thr,
+           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+2), 5] >= MZS_thr,
+           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+3), 5] >= MZS_thr,
+           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+4), 5] >= MZS_thr)){
+      tombo_status <- c(tombo_status, 'YES')
+    } else {
+      tombo_status <- c(tombo_status, 'NO')
+    }
+    
+    ##Nanocompore:
+    if (length(list_plotting[[4]][which(list_plotting[[4]]$Position == position), 3]) == 0) {
+      nanocompore_rawScore <- c(nanocompore_rawScore, 'NA')
+      nanocompore_modifiedScore <- c(nanocompore_modifiedScore, 'NA')
+      
+    } else {
+      nanocompore_rawScore <- c(nanocompore_rawScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 3])
+      nanocompore_modifiedScore <- c(nanocompore_modifiedScore, list_plotting[[4]][which(list_plotting[[4]]$Position == position), 5])
+      
+    }
+
+    #Loop over the kmer to find if Nanocompore identified it:
+    #Define values and overwrite NaNs:
+    single_pos_0 <- overwrite_NaNs(list_plotting[[4]][which(list_plotting[[4]]$Position == single_pos), 5])
+    single_pos_1 <- overwrite_NaNs(list_plotting[[4]][which(list_plotting[[4]]$Position == single_pos+1), 5])
+    single_pos_2 <- overwrite_NaNs(list_plotting[[4]][which(list_plotting[[4]]$Position == single_pos+2), 5])
+    single_pos_3 <- overwrite_NaNs(list_plotting[[4]][which(list_plotting[[4]]$Position == single_pos+3), 5])
+    single_pos_4 <- overwrite_NaNs(list_plotting[[4]][which(list_plotting[[4]]$Position == single_pos+4), 5])
+    
+    if(any(single_pos_0 >= MZS_thr, 
+           single_pos_1 >= MZS_thr,
+           single_pos_2 >= MZS_thr,
+           single_pos_3 >= MZS_thr,
+           single_pos_4 >= MZS_thr)){
+      nanocompore_status <- c(nanocompore_status, 'YES')
+    } else {
+      nanocompore_status <- c(nanocompore_status, 'NO')
+    }
     
   }
   
@@ -379,6 +449,11 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting) 
   positions_df$Nanopolish_Score <- nanopolish_modifiedScore
   positions_df$Tombo_Score <- tombo_modifiedScore
   positions_df$Nanocompore_Score <- nanocompore_modifiedScore
+  
+  positions_df$Epinano_Status <- epinano_status
+  positions_df$Nanopolish_Status <- nanopolish_status
+  positions_df$Tombo_Status <- tombo_status
+  positions_df$Nanocompore_Status <- nanocompore_status
   
   return(positions_df)
 }
@@ -394,7 +469,7 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name) {
   write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
 }
 
-analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position) {
+analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr) {
   epinano <- list_significant[[1]]
   nanopolish <- list_significant[[2]]
   tombo <- list_significant[[3]]
@@ -599,6 +674,19 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- unlist(intersect_14)
     
+  } else if (n1 == 0 & n3 == 0) { 
+    #Overlappings: checking which software has identified less significant positions and then it uses it as query
+    intersect_24 <- overlapping_GRobjects(grNanopolish, grNanocompore, n2, n4)
+    length_intersect_24 <- extract_length_from_GRobjects(intersect_24)
+    
+    #Venn Diagram:  
+    print(c(n2, n4, length_intersect_24))
+    methods_name <-  c('Nanopolish', 'Nanocompore')
+    draw_pairwise_venn_diagram(n2, n4, length_intersect_24, methods_name, output_name)
+    
+    #Extract kmers supported by two or more softwares: 
+    supported_kmers <- unlist(intersect_24)
+    
   } else {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
     intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
@@ -637,8 +725,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     #Venn Diagram:  
     print(c(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
             length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234))
-    draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
-                      length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
+    #draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
+    #                  length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_14), unlist(intersect_23), unlist(intersect_24),
@@ -649,11 +737,11 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   ##Kmer analysis: 
   #Analysis of all kmers across the chromosome:
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
-  all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting)
+  all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting, MZS_thr)
   kmer_analysis(all_kmers, fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'))
 
   #Analyse the supported kmers:
-  all_ranges <- extracting_modified_ZScores(supported_kmers, list_plotting) 
+  all_ranges <- extracting_modified_ZScores(supported_kmers, list_plotting, MZS_thr) 
   kmer_analysis(all_ranges, fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
   
 }
