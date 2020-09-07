@@ -81,4 +81,4 @@ if(args$Plotting==TRUE){
 
 print('Overlap analysis and Venn Diagram')
 #Analysis of significant positions across methods: 
-analysis_significant_positions(list_significant, list_plotting, args$Fasta_file, args$Output_name,  args$Initial_position, args$Final_position)
+analysis_significant_positions(list_significant, list_plotting, args$Fasta_file, args$Output_name,  args$Initial_position, args$Final_position, args$MZS_thr)
