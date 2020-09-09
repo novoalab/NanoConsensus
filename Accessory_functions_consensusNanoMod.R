@@ -314,8 +314,11 @@ extract_kmers <- function (bedfile, fasta) {
 }
 
 overwrite_NaNs <- function (input) {
-  if (is.na(input) == TRUE) {
-    out_value <- 0
+                      
+  if (length(input) == 0) {
+    out_value <- 'NA'
+  } else if (is.na(input) == TRUE) {
+    out_value <- 'NA'
   } else {
     out_value <- input
   }
@@ -397,13 +400,20 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
       tombo_modifiedScore <- c(tombo_modifiedScore, list_plotting[[3]][which(list_plotting[[3]]$Position == position), 5])
       
     }
-
+    
+    #Define values and overwrite NaNs:
+    single_pos_0 <- overwrite_NaNs(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos), 5])
+    single_pos_1 <- overwrite_NaNs(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+1), 5])
+    single_pos_2 <- overwrite_NaNs(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+2), 5])
+    single_pos_3 <- overwrite_NaNs(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+3), 5])
+    single_pos_4 <- overwrite_NaNs(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+4), 5])
+    
     #Loop over the kmer to find if Tombo identified it:
-    if(any(list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos), 5] >= MZS_thr, 
-           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+1), 5] >= MZS_thr,
-           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+2), 5] >= MZS_thr,
-           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+3), 5] >= MZS_thr,
-           list_plotting[[3]][which(list_plotting[[3]]$Position == single_pos+4), 5] >= MZS_thr)){
+    if(any(single_pos_0 >= MZS_thr, 
+           single_pos_1 >= MZS_thr,
+           single_pos_2 >= MZS_thr,
+           single_pos_3 >= MZS_thr,
+           single_pos_4 >= MZS_thr)){
       tombo_status <- c(tombo_status, 'YES')
     } else {
       tombo_status <- c(tombo_status, 'NO')
@@ -506,7 +516,13 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
         grList <- pc(grList,grNew)
 
       }
-      grList <- do.call(c, grList)
+      
+      if(elementNROWS(grList) == 1) {
+        grList <- grList
+      } else {
+        grList <- do.call(c, grList)
+      }
+        
       assign(paste('gr',methods_name[j],sep=""), unique(grList))
     
     } else {
