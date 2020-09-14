@@ -29,6 +29,8 @@ parser$add_argument("-chr", "--Chr", type="character", help="Character to study.
 parser$add_argument("--MZS_thr", default=2.5, type="double", 
                     help="Modified Z-Score threshold for all results [default %(default)]")
 parser$add_argument("-subset", "--Subsetting", action="store_true", help="Input data contain multiple chr.")
+parser$add_argument("-autoscale", "--Autoscaling", action="store_true", help="Generate additional plots with autoscale within data from the same software.")
+
 
 #EPINANO:
 parser$add_argument("-Epi_Sample", "--Epinano_Sample", nargs=1, type="character", help="Path to Epinano features sample results.")
@@ -76,7 +78,7 @@ if (args$Subsetting==TRUE) {
 
 if(args$Plotting==TRUE){
   print('Plotting across all methods')
-  barplot_plotting(list_plotting, list_significant, args$Output_name, args$MZS_thr)
+  barplot_plotting(list_plotting, list_significant, args$Output_name, args$MZS_thr, args$Autoscaling)
 }
 
 print('Overlap analysis and Venn Diagram')

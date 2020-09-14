@@ -172,7 +172,7 @@ subset_by_chr <- function(list_methods, chr){
  return(list_methods)
 }
 
-barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr){
+barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling){
   
   #Rbind all data - already in long format: 
   initial_join <- TRUE
@@ -202,8 +202,24 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                             legend.text=element_text(size=22)) + 
-          facet_grid(sample_f ~ . , scales="free_y") )
+          facet_grid(sample_f ~ . , scales="fixed") )
   dev.off()
+  
+  if (autoscaling == TRUE) {
+    #Plotting:
+    png(file=paste(output_name,"_AUTOSCALE.png", sep = ""),bg = "transparent", height=1480, width = 2640)
+    plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
+           geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=1.5, fill = "#dcdcdd") +
+           new_scale_color() +
+           geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=1.5) + 
+           scale_fill_gradient(low="#ff7f7f", 
+                               high="#ff0000") + 
+           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                             legend.text=element_text(size=22)) + 
+           facet_grid(sample_f ~ . , scales="free_y") )
+    dev.off()
+  }
   
 }
 
@@ -251,7 +267,7 @@ draw_triple_venn_diagram <- function (group_1, group_2, group_3, intersect_12, i
   #Draw Venn Diagram:
   grid.newpage()
   venn.plot <- draw.triple.venn(group_1, group_2, group_3, intersect_12, intersect_23, intersect_13, 
-                              intersect_123, category = groups, fill = c("darksalmon", "dodgerblue", "lightseagreen"), cat.pos = c(0, 0, 0), alpha = 0.5
+                              intersect_123, category = groups, fill = c("darksalmon", "dodgerblue", "lightseagreen"), cat.pos = c(-45, 0, 45), alpha = 0.5
   )
   
   # Writing to file
