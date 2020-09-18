@@ -390,13 +390,25 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       }
       
     } else {
-      ##Searching for the middle value:
+      ##Searching for position 0 value:
       position <- initial_position + 2
       
-      ##Epinano:
-      soft_rawScore <- c(soft_rawScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 3])
-      soft_modifiedScore <- c(soft_modifiedScore, list_plotting[[1]][which(list_plotting[[1]]$Position == position), 5])
+      ##Software - extract values:
+      rawScore <- list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == position), 3]
+      if (length(rawScore)==0 || is.infinite(rawScore) == TRUE){
+        soft_rawScore <- c(soft_rawScore, 0)
+      } else {
+        soft_rawScore <- c(soft_rawScore, rawScore)
+      }
       
+      modifiedScore <- list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == position), 5]
+      
+      if (length(modifiedScore)==0 || is.infinite(modifiedScore) == TRUE){
+        soft_modifiedScore <- c(soft_modifiedScore,0)
+      } else {
+        soft_modifiedScore <- c(soft_modifiedScore, modifiedScore)
+      }
+
       #Define values and overwrite NaNs:
       single_pos_0 <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == initial_position), 5])
       single_pos_1 <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == initial_position+1), 5])
@@ -414,7 +426,7 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
     }
 
   }
-  
+
   #Create final dataframe:
   final <- data.frame(soft_rawScore, soft_modifiedScore, soft_status)
   colnames(final) <- c('rawScore', 'modifiedScore', 'status')
@@ -467,6 +479,19 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
   positions_df$Nanopolish_Status <- nanopolish_data$status
   positions_df$Tombo_Status <- tombo_data$status
   positions_df$Nanocompore_Status <- nanocompore_data$status
+  
+  
+  ##Calculate the merged_score:
+  #Re-scaling:
+  if (summit == F){
+    data <- data.frame(positions_df$Epinano_Score, positions_df$Nanopolish_Score, positions_df$Tombo_Score, positions_df$Nanocompore_Score)
+    
+    for (i in seq(1:length(data))) {
+      data[,i] <- rescale(unlist(data[i]), to=c(0,1))
+    }
+    
+    positions_df$Merged_Score <- rowMeans(data, na.rm = TRUE)
+  }
   
   return(positions_df)
 }
