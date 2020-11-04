@@ -10,6 +10,7 @@ suppressMessages(library('GenomicRanges'))
 suppressMessages(library('stringr'))
 suppressMessages(library('scales'))
 suppressMessages(library('ggnewscale'))
+suppressMessages(library('ggrepel'))
 
 ##Import accessory functions:
 source('Accessory_functions_consensusNanoMod.R')
@@ -28,7 +29,8 @@ parser$add_argument("-plot", "--Plotting", action="store_true", help="Plot signi
 parser$add_argument("-chr", "--Chr", type="character", help="Character to study.")
 parser$add_argument("--MZS_thr", default=2.5, type="double", 
                     help="Modified Z-Score threshold for all results [default %(default)]")
-parser$add_argument("-subset", "--Subsetting", action="store_true", help="Input data contain multiple chr.")
+parser$add_argument("--NC_thr", default=7, type="double", 
+                    help="NanoConsensus score threshold for all results [default %(default)]")
 parser$add_argument("-autoscale", "--Autoscaling", action="store_true", help="Generate additional plots with autoscale within data from the same software.")
 
 
@@ -55,26 +57,21 @@ args <- parser$parse_args()
 
 print('Processing data')
 ##EPINANO processing: 
-epinano_data <- epinano_processing(args$Epinano_Sample, args$Epinano_IVT, args$Initial_position, args$Final_position, args$MZS_thr)
+epinano_data <- epinano_processing(args$Epinano_Sample, args$Epinano_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
 
 ##NANOPOLISH processing: 
-nanopolish_data <- nanopolish_processing(args$Nanopolish_Sample, args$Nanopolish_IVT, args$Initial_position, args$Final_position, args$MZS_thr)
+nanopolish_data <- nanopolish_processing(args$Nanopolish_Sample, args$Nanopolish_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
 
 ##TOMBO processing: 
-tombo_data <- tombo_processing(args$Tombo_Sample, args$thr_tombo_pos, args$thr_tombo_kmer, args$Initial_position, args$Final_position, args$MZS_thr)
+tombo_data <- tombo_processing(args$Tombo_Sample, args$thr_tombo_pos, args$thr_tombo_kmer, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
 
 ##NANOCOMPORE processing:
-nanocompore_data <- nanocomp_processing(args$Nanocomp_Sample, args$nanocomp_metric, args$thr_nanocomp, args$Initial_position, args$Final_position, args$MZS_thr)
+nanocompore_data <- nanocomp_processing(args$Nanocomp_Sample, args$nanocomp_metric, args$thr_nanocomp, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
 
 ##Plotting significant positions across all methods:
 list_plotting <- list(epinano_data[[1]], nanopolish_data[[1]], tombo_data[[1]], nanocompore_data[[1]])
 list_significant <- list(epinano_data[[2]], nanopolish_data[[2]], tombo_data[[2]], nanocompore_data[[2]])
 
-##Only include positions from a specific chromosome - indicated by the user:
-if (args$Subsetting==TRUE) {
-  list_plotting <- subset_by_chr(list_plotting, args$Chr)
-  list_significant <- subset_by_chr(list_significant, args$Chr)
-}
 
 if(args$Plotting==TRUE){
   print('Plotting across all methods')
@@ -83,4 +80,4 @@ if(args$Plotting==TRUE){
 
 print('Overlap analysis and Venn Diagram')
 #Analysis of significant positions across methods: 
-analysis_significant_positions(list_significant, list_plotting, args$Fasta_file, args$Output_name,  args$Initial_position, args$Final_position, args$MZS_thr)
+analysis_significant_positions(list_significant, list_plotting, args$Fasta_file, args$Output_name,  args$Initial_position, args$Final_position, args$MZS_thr, args$NC_thr)
