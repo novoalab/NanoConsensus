@@ -5,7 +5,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   
   #Import and clean data:
   sample <- read.csv(sample_file,stringsAsFactors = FALSE)
-  sample <- subset(sample, cov>50)
+  sample <- subset(sample, cov>30)
   sample <- subset(sample, pos>=initial_position) 
   sample <- subset(sample, pos<=final_position)
   sample$reference <- paste(sample$X.Ref, sample$pos, sep='_')
@@ -14,7 +14,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   colnames(sample) <- c('Reference', 'Position', 'Difference_sample', 'Merge')
   
   ivt <- read.csv(ivt_file,stringsAsFactors = FALSE)
-  ivt <- subset(ivt, cov>50)
+  ivt <- subset(ivt, cov>30)
   ivt <- subset(ivt, pos>=initial_position) 
   ivt <- subset(ivt, pos<=final_position)
   ivt$reference <- paste(ivt$X.Ref, ivt$pos, sep='_')
@@ -22,27 +22,38 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   ivt <- ivt[,c(1,2,12,11)]
   colnames(ivt) <- c('Reference', 'Position', 'Difference_IVT', 'Merge')
   
+  if (nrow(sample)!=0 && nrow(ivt)!=0) {
+    #Join both dataframes and clean unecessary columns:
+    plotting_positions <- join(sample, ivt, by="Merge")
+    plotting_positions <- subset(plotting_positions, Reference == chr)
+    #plotting_positions <- subset(plotting_positions, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
+    #                                                              22304,22305,26142,26143,26144,26145,26146))
+    plotting_positions$Difference <- abs(as.numeric(plotting_positions$Difference_sample) - as.numeric(plotting_positions$Difference_IVT))
+    plotting_positions$Feature <- "Epinano"
+    plotting_positions <- plotting_positions[,c(4,2,8,9)]
+    
+    #Calculate the threshold:
+    threshold <- median(plotting_positions$Difference, na.rm = TRUE)
   
-  #Join both dataframes and clean unecessary columns:
-  plotting_positions <- join(sample, ivt, by="Merge")
-  plotting_positions <- subset(plotting_positions, Reference == chr)
-  plotting_positions$Difference <- abs(plotting_positions$Difference_sample - plotting_positions$Difference_IVT)
-  plotting_positions$Feature <- "Epinano"
-  plotting_positions <- plotting_positions[,c(4,2,8,9)]
-
-  #Calculate the threshold:
-  threshold <- median(plotting_positions$Difference)
-
-  #Calculate fold change and re-order:
-  #plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
-  plotting_positions$Score <- plotting_positions$Difference/threshold
-  plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score, na.rm = TRUE))/sd(plotting_positions$Score, na.rm = TRUE)
+    #Calculate fold change and re-order:
+    #plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
+    plotting_positions$Score <- plotting_positions$Difference/threshold
+    plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score, na.rm = TRUE))/sd(plotting_positions$Score, na.rm = TRUE)
+    
+    plotting_positions <- plotting_positions[,c(1,2,5,4,6)]
+    colnames(plotting_positions) <- c('Reference', 'Position', 'Score', 'Feature', 'Modified_ZScore')
+    
+    #Clean NAs values from the normalization process:
+    #plotting_positions$Score[is.nan(plotting_positions$Score) || is.na(plotting_positions$Score)] <- 0
+    #plotting_positions$Modified_ZScore[is.nan(plotting_positions$Modified_ZScore) || is.na(plotting_positions$Modified_ZScore)] <- 0
+    
+    #Extract significant positions based on the specific threshold:
+    significant_positions <- subset(plotting_positions, Modified_ZScore>MZS_thr)
   
-  plotting_positions <- plotting_positions[,c(1,2,5,4,6)]
-  colnames(plotting_positions) <- c('Reference', 'Position', 'Score', 'Feature', 'Modified_ZScore')
-  
-  #Extract significant positions based on the specific threshold:
-  significant_positions <- subset(plotting_positions, Modified_ZScore>MZS_thr)
+  } else {
+    plotting_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+    significant_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+  }
 
   return(list(plotting_positions,significant_positions))
 }
@@ -53,7 +64,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   
   #Add sample information:
   sample$read_name <- 'Nanopolish'
-  sample <- subset(sample, coverage>50)
+  sample <- subset(sample, coverage>30)
   colnames(sample)<- c("contig_wt","position","reference_kmer_wt", "feature_wt", "event_level_median_wt", 'coverage')
   sample<- subset(sample, contig_wt == chr)
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
@@ -61,7 +72,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   #Import KO: 
   raw_data_ivt <-read.delim(ivt_file)
   raw_data_ivt$read_name <- 'IVT'
-  raw_data_ivt <- subset(raw_data_ivt, coverage>50)
+  raw_data_ivt <- subset(raw_data_ivt, coverage>30)
   colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "feature", "event_level_median_ko", 'coverage')
   raw_data_ivt <- subset(raw_data_ivt, contig_ko == chr)
   raw_data_ivt$reference <- paste(raw_data_ivt$contig_ko, raw_data_ivt$position, sep='_')
@@ -74,14 +85,20 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
 
   plotting_positions <- subset(plotting_positions, Position>=initial_position)
   plotting_positions <- subset(plotting_positions, Position<=final_position)
-
+  #plotting_positions <- subset(plotting_positions, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
+  #                                                               22304,22305,26142,26143,26144,26145,26146))
+  
   #Calculate the threshold:
   threshold <- median(plotting_positions$Difference, na.rm = TRUE)
 
   #Calculate fold change:
   #plotting_positions$Score <- rescale((plotting_positions$Difference/threshold), to=c(0,1))
   plotting_positions$Score <- plotting_positions$Difference/threshold
-  plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score))/sd(plotting_positions$Score)
+  plotting_positions$Modified_ZScore <- (plotting_positions$Score-median(plotting_positions$Score, na.rm = TRUE))/sd(plotting_positions$Score, na.rm = TRUE)
+  
+  #Clean NAs values from the normalization process:
+  #plotting_positions$Score[is.nan(plotting_positions$Score) || is.na(plotting_positions$Score)] <- 0
+  #plotting_positions$Modified_ZScore[is.nan(plotting_positions$Modified_ZScore) || is.na(plotting_positions$Modified_ZScore)] <- 0
   
   #Format data for plotting:
   plotting_positions <- plotting_positions[,c(1,2,5,4,6)]
@@ -97,37 +114,48 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
   #Import data:
   sample <- read.delim(sample_file)
 
-  #Apply some filters and labels:
-  sample$Feature <- 'Tombo'
-  sample <- subset(sample, Coverage_Sample>50 & Coverage_IVT>50)
-  colnames(sample) <- c('Reference', 'Chr', 'Position', 'Difference', 'Coverage_Sample', 'Coverage_IVT', 'Statistic_kmer',
-                           'Feature')
+  if (nrow(sample)>0) {
+    #Apply some filters and labels:
+    sample$Feature <- 'Tombo'
+    sample <- subset(sample, Coverage_Sample>30 & Coverage_IVT>30)
+    colnames(sample) <- c('Reference', 'Chr', 'Position', 'Difference', 'Coverage_Sample', 'Coverage_IVT', 'Statistic_kmer',
+                             'Feature')
+    
+    sample <- subset(sample, Chr == chr)
+    sample <- subset(sample, Position >= initial_position)
+    sample <- subset(sample, Position <= final_position)
+    #sample <- subset(sample, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
+    #                                       22304,22305,26142,26143,26144,26145,26146))
+    #Calculate the thresholds:
+    threshold_position <- median(sample$Difference, na.rm = TRUE)
+    threshold_kmer <- median(sample$Statistic_kmer, na.rm = TRUE)
+    
+    #Calculate fold change:
+    #sample$Score <- rescale((sample$Difference/threshold_position), to=c(0,1))
+    #sample$Score_kmer <- rescale((sample$Statistic_kmer/threshold_kmer), to=c(0,1))
+    sample$Score <- sample$Difference/threshold_position
+    sample$Score_kmer <- sample$Statistic_kmer/threshold_kmer
+    sample$Modified_ZScore <- (sample$Score-median(sample$Score, na.rm = TRUE))/sd(sample$Score, na.rm = TRUE)
+    sample$Modified_ZScore_kmer <- (sample$Score_kmer-median(sample$Score_kmer, na.rm = TRUE))/sd(sample$Score_kmer, na.rm = TRUE)
   
-  sample <- subset(sample, Chr == chr)
-  sample <- subset(sample, Position >= initial_position)
-  sample <- subset(sample, Position <= final_position)
+    #Filter columns to get data in plotting format: 
+    plotting_positions <- sample[,c(1,3,9,8,11)]
+    
+    #Clean NAs values from the normalization process:
+    #plotting_positions$Score[is.nan(plotting_positions$Score)] <- 0
+    #plotting_positions$Modified_ZScore[is.nan(plotting_positions$Modified_ZScore) || is.na(plotting_positions$Modified_ZScore)] <- 0
+    
+    #Extract significant positions and kmers and then perform the intersection:
+    positions <- subset(sample, Modified_ZScore > MZS_thr)
+    kmer <- subset(sample, Modified_ZScore_kmer > MZS_thr)
+    
+    significant_positions <- join(kmer, positions, by = 'Reference', type = "inner")
+    significant_positions <- significant_positions[,c(1,3,9,8,11)]
   
-  #Calculate the thresholds:
-  threshold_position <- median(sample$Difference)
-  threshold_kmer <- median(sample$Statistic_kmer, na.rm = TRUE)
-  
-  #Calculate fold change:
-  #sample$Score <- rescale((sample$Difference/threshold_position), to=c(0,1))
-  #sample$Score_kmer <- rescale((sample$Statistic_kmer/threshold_kmer), to=c(0,1))
-  sample$Score <- sample$Difference/threshold_position
-  sample$Score_kmer <- sample$Statistic_kmer/threshold_kmer
-  sample$Modified_ZScore <- (sample$Score-median(sample$Score))/sd(sample$Score)
-  sample$Modified_ZScore_kmer <- (sample$Score_kmer-median(sample$Score_kmer, na.rm = TRUE))/sd(sample$Score_kmer, na.rm = TRUE)
-
-  #Filter columns to get data in plotting format: 
-  plotting_positions <- sample[,c(1,3,9,8,11)]
-  
-  #Extract significant positions and kmers and then perform the intersection:
-  positions <- subset(sample, Modified_ZScore > MZS_thr)
-  kmer <- subset(sample, Modified_ZScore_kmer > MZS_thr)
-  
-  significant_positions <- join(kmer, positions, by = 'Reference', type = "inner")
-  significant_positions <- significant_positions[,c(1,3,9,8,11)]
+  } else {
+    plotting_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+    significant_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
+  }
   
   return(list(plotting_positions, significant_positions))
 }
@@ -136,10 +164,13 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
   #Import data:
   sample <- read.delim(sample_file)
   if (nrow(sample)>0) {
+    
     #Transform metric:
+    #As we are working with p-values, we will substitute NaN to 1 for downstream analysis:
+    #sample$GMM_logit_pvalue_context_4[is.nan(sample$GMM_logit_pvalue_context_4)] <- NA
     sample$stat <- log(sample$GMM_logit_pvalue_context_4)
     sample$log_stat <- (sample$stat)*(-1)
-
+    
     #Prepare plotting data:
     sample$reference <- paste(sample$ref_id, sample$pos, sep='_')
     sample$Feature <- 'Nanocompore'
@@ -149,18 +180,23 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     colnames(plotting_data) <- c('Reference', 'Position', 'Difference', 'Feature')
     plotting_data <- subset(plotting_data, Position>=initial_position)
     plotting_data <- subset(plotting_data, Position <= final_position)
-
+    #plotting_data <- subset(plotting_data, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
+    #                                                     22304,22305,26142,26143,26144,26145,26146))
+    
     #Calculate the thresholds:
     threshold <- median(plotting_data$Difference, na.rm = TRUE)
 
     #Calculate fold change:
-    #plotting_data$Score <- rescale((plotting_data$Difference/threshold), to=c(0,1))
     plotting_data$Score <- plotting_data$Difference/threshold
     plotting_data$Modified_ZScore <- (plotting_data$Score-median(plotting_data$Score, na.rm = TRUE))/sd(plotting_data$Score, na.rm = TRUE)
+
+    #Clean NAs values from the normalization process:
+    #plotting_data$Score[is.nan(plotting_data$Score) || is.na(plotting_data$Score)] <- 0
+    #plotting_data$Modified_ZScore[is.nan(plotting_data$Modified_ZScore) || is.na(plotting_data$Modified_ZScore)] <- 0
     
     #Format data for plotting:
     plotting_data <- plotting_data[,c(1,2,5,4,6)]
-    
+
     #Extract significant positions:
     significant_positions <- subset(plotting_data, Modified_ZScore > MZS_thr)
     
@@ -169,17 +205,11 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     significant_positions <- data.frame(Reference= character(), Position=integer(), Difference=double(), Feature=character())
 }
   
+  
   return(list(plotting_data, significant_positions))
 }
 
-subset_by_chr <- function(list_methods, chr){
- for (i in 1:length(list_methods)){
-   list_methods[[i]] <- subset(list_methods[[i]], startsWith(as.character(Reference), chr))
- }
- return(list_methods)
-}
-
-barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling){
+barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling, initial_pos, final_pos){
   
   #Rbind all data - already in long format: 
   initial_join <- TRUE
@@ -201,9 +231,9 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   #Plotting:
   pdf(file=paste(output_name,".pdf", sep = ""), bg = "transparent", width = 26, height = 16 )
   plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
-          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=2, fill = "#dcdcdd") +
-          new_scale_color() +
-          geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=2) + 
+          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
+          new_scale_color() + xlim(initial_pos, final_pos) +
+          geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=4) + 
           scale_fill_gradient(low="#ff7f7f", 
                               high="#ff0000") + 
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
@@ -235,23 +265,39 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name) {
   supported_positions <- c()
   kmers_limits <- c()
   
-  for (i in seq(1, nrow(supported_kmers))) {
-    supported_positions <- c(supported_positions, seq(supported_kmers[i,2], supported_kmers[i,3]))
-    kmers_limits <- c(kmers_limits, supported_kmers[i,2], supported_kmers[i,3])
+  if (nrow(supported_kmers)!=0) {
+    for (i in seq(1, nrow(supported_kmers))) {
+      supported_positions <- c(supported_positions, seq(supported_kmers[i,2], supported_kmers[i,3]))
+      kmers_limits <- c(kmers_limits, supported_kmers[i,2], supported_kmers[i,3])
+    }
+    
+    #Plotting:
+    data$Position <- data$Start+2
+    pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
+    plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
+           geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=2, fill = "red") + 
+           geom_label_repel(data=subset(data, Position %in% kmers_limits),aes(label = Position, y = Merged_Score), size = 8, label.size = 0.75) +
+           ylab('NanoConsensus Score') +
+           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                             legend.text=element_text(size=22)))
+    #facet_grid(sample_f ~ . , scales="fixed") )
+    dev.off()
+    
+  } else {
+    data$Position <- data$Start+2
+    pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
+    plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
+           #geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=2, fill = "red") + 
+           #geom_label_repel(data=subset(data, Position %in% kmers_limits),aes(label = Position, y = Merged_Score), size = 8, label.size = 0.75) +
+           ylab('NanoConsensus Score') +
+           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                             legend.text=element_text(size=22)))
+    #facet_grid(sample_f ~ . , scales="fixed") )
+    dev.off()
   }
  
-  #Plotting:
-  data$Position <- data$Start+2
-  pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
-  plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
-         geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=2, fill = "red") + 
-         geom_label_repel(data=subset(data, Position %in% kmers_limits),aes(label = Position, y = Merged_Score), size = 8, label.size = 0.75) +
-         ylab('NanoConsensus Score') +
-         theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
-                           axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                           legend.text=element_text(size=22)))
-         #facet_grid(sample_f ~ . , scales="fixed") )
-  dev.off()
   
 }
 
@@ -363,8 +409,8 @@ extract_kmers <- function (bedfile, fasta) {
 
 overwrite_NaNs <- function (input) {
                       
-  if (is.na(input) == TRUE || is.infinite(input) == TRUE || length(input) == 0) {
-    out_value <- 0
+  if (is.nan(input) == TRUE || is.infinite(input) == TRUE || length(input) == 0) {
+    out_value <- NA
   } else {
     out_value <- input
   }
@@ -397,13 +443,33 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
           new_rawScore <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == x), 3])
           new_modifiedScore <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == x), 5])
           
-          #Checking for higher score:    
-          if (new_rawScore > highest_rawScore){
-            highest_rawScore <- new_rawScore
-          } 
+          ##Checking for higher score - rawScore:
+          if (is.na(highest_rawScore) == TRUE || is.nan(highest_rawScore) == TRUE){
+            if (is.na(new_rawScore) == FALSE & is.nan(new_rawScore) == FALSE) {
+              highest_rawScore <- new_rawScore
+            }
+          } else if (is.na(new_rawScore) == TRUE || is.nan(new_rawScore) == TRUE) {
+            next
+            
+          } else {
+            if (new_rawScore > highest_rawScore){
+              highest_rawScore <- new_rawScore
+            } 
+          }
           
-          if (new_modifiedScore > highest_modifiedScore) {
-            highest_modifiedScore <- new_modifiedScore
+          
+          ##Checking for higher score - modified score:
+          if (is.na(highest_modifiedScore) == TRUE || is.nan(highest_modifiedScore) == TRUE){
+            if (is.na(new_modifiedScore) == FALSE & is.nan(new_modifiedScore) == FALSE) {
+              highest_modifiedScore <- new_modifiedScore
+            }
+          } else if (is.na(new_modifiedScore) == TRUE || is.nan(new_modifiedScore) == TRUE) {
+            next
+            
+          } else {
+            if (new_modifiedScore > highest_modifiedScore){
+              highest_modifiedScore <- new_modifiedScore
+            } 
           }
           
         }
@@ -414,11 +480,16 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       soft_rawScore[i] <- highest_rawScore
       soft_modifiedScore[i] <- highest_modifiedScore
       
-      #Check if Epinano identified it:
-      if(soft_modifiedScore[i] >= MZS_thr){
-        soft_status <- c(soft_status, 'YES')
-      } else {
+      #Check if a specific software identified it:
+      if (is.na(highest_modifiedScore) == TRUE || is.nan(highest_modifiedScore) == TRUE) {
         soft_status <- c(soft_status, 'NO')
+        
+      } else {
+        if(soft_modifiedScore[i] >= MZS_thr){
+          soft_status <- c(soft_status, 'YES')
+        } else {
+          soft_status <- c(soft_status, 'NO')
+        }
       }
       
     } else {
@@ -428,7 +499,7 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       ##Software - extract values:
       rawScore <- list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == position), 3]
       if (length(rawScore)==0 || is.infinite(rawScore) == TRUE){
-        soft_rawScore <- c(soft_rawScore, 0)
+        soft_rawScore <- c(soft_rawScore, NA)
       } else {
         soft_rawScore <- c(soft_rawScore, rawScore)
       }
@@ -436,7 +507,7 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       modifiedScore <- list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == position), 5]
       
       if (length(modifiedScore)==0 || is.infinite(modifiedScore) == TRUE){
-        soft_modifiedScore <- c(soft_modifiedScore,0)
+        soft_modifiedScore <- c(soft_modifiedScore, NA)
       } else {
         soft_modifiedScore <- c(soft_modifiedScore, modifiedScore)
       }
@@ -449,8 +520,8 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       single_pos_4 <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == initial_position+4), 5])
       
       #Loop over the kmer to find if Epinano identified it:
-      if(any(single_pos_0 >= MZS_thr, single_pos_1 >= MZS_thr, single_pos_2 >= MZS_thr,single_pos_3 >= MZS_thr,
-             single_pos_4 >= MZS_thr)){
+      kmer_positions <- c(single_pos_0, single_pos_1, single_pos_2, single_pos_3, single_pos_4)
+      if(any(kmer_positions >= MZS_thr, na.rm = TRUE)){
         soft_status <- c(soft_status, 'YES')
       } else {
         soft_status <- c(soft_status, 'NO')
@@ -518,11 +589,35 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
   if (summit == F){
     data <- data.frame(positions_df$Epinano_Score, positions_df$Nanopolish_Score, positions_df$Tombo_Score, positions_df$Nanocompore_Score)
     
+
+    #Re-scale Modified Z-Scores between 0 and 1:
     for (i in seq(1:length(data))) {
       data[,i] <- rescale(unlist(data[i]), to=c(0,1))
+    
     }
     
-    positions_df$Merged_Score <- apply(data,1,median)
+    data[is.na(data)] <- 0
+    
+    #Rescale outputs 0.5 when the software gives the same MZS for all positions - correcting for it if needed:
+    if (length(unique(data$positions_df.Epinano_Score)) == 1 || all(is.na(unique(data$positions_df.Epinano_Score)))) {
+      data$positions_df.Epinano_Score <- 0 
+    } 
+    
+    if (length(unique(data$positions_df.Nanopolish_Score)) == 1 || all(is.na(unique(data$positions_df.Nanopolish_Score)))) {
+      data$positions_df.Nanopolish_Score <- 0 
+    }
+
+    if (length(unique(data$positions_df.Tombo_Score)) == 1 || all(is.na(unique(data$positions_df.Tombo_Score)))) {
+      data$positions_df.Tombo_Score <- 0 
+    } 
+    
+    if (length(unique(data$positions_df.Nanocompore_Score)) == 1 || all(is.na(unique(data$positions_df.Nanocompore_Score)))) {
+      data$positions_df.Nanocompore_Score <- 0 
+    }
+    
+    print(head(data))
+    #Calculate NanoConsensus score:
+    positions_df$Merged_Score <- apply(data,1,median,na.rm = TRUE)
     threshold <- Consensus_score*median(positions_df$Merged_Score,  na.rm = TRUE)
     print(threshold)
     positions_NanoConsensus <- subset(positions_df, Merged_Score >= threshold)
@@ -819,12 +914,22 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
   all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting, MZS_thr, FALSE, Consensus_score)
   kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'))
-
-  #Analyse the supported kmers:
+  
+  #Analyse the supported kmers - only if they are present:
   filtered_supported_kmers <- overlapping_GRobjects(reduce(supported_kmers), GRanges(seqnames=all_kmers[[2]][,c('Chr')],ranges=IRanges(all_kmers[[2]][,c('Start')], end = all_kmers[[2]][,c('End')])),1,2)
-  all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score)
-  kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
+  if(extract_length_from_GRobjects(filtered_supported_kmers)!=0){
+    all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score)
+    kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
+    
+    #Plot NanoConsensus score across transcripts:
+    Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
+    
+  } else {
+    all_ranges <- data.frame()
+    #Plot NanoConsensus score across transcripts:
+    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
+  }
 
-  #Plot NanoConsensus score across transcripts:
-  Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
+  
+  
 }

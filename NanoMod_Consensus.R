@@ -29,7 +29,7 @@ parser$add_argument("-plot", "--Plotting", action="store_true", help="Plot signi
 parser$add_argument("-chr", "--Chr", type="character", help="Character to study.")
 parser$add_argument("--MZS_thr", default=2.5, type="double", 
                     help="Modified Z-Score threshold for all results [default %(default)]")
-parser$add_argument("--NC_thr", default=7, type="double", 
+parser$add_argument("--NC_thr", default=5, type="double", 
                     help="NanoConsensus score threshold for all results [default %(default)]")
 parser$add_argument("-autoscale", "--Autoscaling", action="store_true", help="Generate additional plots with autoscale within data from the same software.")
 
@@ -75,7 +75,7 @@ list_significant <- list(epinano_data[[2]], nanopolish_data[[2]], tombo_data[[2]
 
 if(args$Plotting==TRUE){
   print('Plotting across all methods')
-  barplot_plotting(list_plotting, list_significant, args$Output_name, args$MZS_thr, args$Autoscaling)
+  barplot_plotting(list_plotting, list_significant, args$Output_name, args$MZS_thr, args$Autoscaling, args$Initial_position, args$Final_position)
 }
 
 print('Overlap analysis and Venn Diagram')
