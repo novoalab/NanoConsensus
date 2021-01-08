@@ -26,8 +26,8 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
     #Join both dataframes and clean unecessary columns:
     plotting_positions <- join(sample, ivt, by="Merge")
     plotting_positions <- subset(plotting_positions, Reference == chr)
-    #plotting_positions <- subset(plotting_positions, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
-    #                                                              22304,22305,26142,26143,26144,26145,26146))
+    plotting_positions <- subset(plotting_positions, !Position %in% c(23401,23402,23403,23404,23405,28141,28142,
+                                                                  28143,28144,28145))
     plotting_positions$Difference <- abs(as.numeric(plotting_positions$Difference_sample) - as.numeric(plotting_positions$Difference_IVT))
     plotting_positions$Feature <- "Epinano"
     plotting_positions <- plotting_positions[,c(4,2,8,9)]
@@ -85,8 +85,8 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
 
   plotting_positions <- subset(plotting_positions, Position>=initial_position)
   plotting_positions <- subset(plotting_positions, Position<=final_position)
-  #plotting_positions <- subset(plotting_positions, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
-  #                                                               22304,22305,26142,26143,26144,26145,26146))
+  plotting_positions <- subset(plotting_positions, !Position %in% c(23401,23402,23403,23404,23405,28141,28142,
+                                                                    28143,28144,28145))
   
   #Calculate the threshold:
   threshold <- median(plotting_positions$Difference, na.rm = TRUE)
@@ -124,8 +124,8 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
     sample <- subset(sample, Chr == chr)
     sample <- subset(sample, Position >= initial_position)
     sample <- subset(sample, Position <= final_position)
-    #sample <- subset(sample, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
-    #                                       22304,22305,26142,26143,26144,26145,26146))
+    sample <- subset(sample, !Position %in% c(23401,23402,23403,23404,23405,28141,28142,
+                                              28143,28144,28145))
     #Calculate the thresholds:
     threshold_position <- median(sample$Difference, na.rm = TRUE)
     threshold_kmer <- median(sample$Statistic_kmer, na.rm = TRUE)
@@ -180,8 +180,8 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     colnames(plotting_data) <- c('Reference', 'Position', 'Difference', 'Feature')
     plotting_data <- subset(plotting_data, Position>=initial_position)
     plotting_data <- subset(plotting_data, Position <= final_position)
-    #plotting_data <- subset(plotting_data, !Position %in% c(19063,19064,19065,19066,19067,22301,22302,22303,
-    #                                                     22304,22305,26142,26143,26144,26145,26146))
+    plotting_data <- subset(plotting_data, !Position %in% c(23401,23402,23403,23404,23405,28141,28142,
+                                                            28143,28144,28145))
     
     #Calculate the thresholds:
     threshold <- median(plotting_data$Difference, na.rm = TRUE)
@@ -900,8 +900,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     #Venn Diagram:  
     print(c(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
             length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234))
-    #draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
-    #                  length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
+    draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
+                      length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_14), unlist(intersect_23), unlist(intersect_24),
