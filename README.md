@@ -15,7 +15,7 @@
 
 NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs KO) using four different RNA modification detection softwares ([Epinano](https://github.com/enovoa/EpiNano), [Nanopolish](https://github.com/jts/nanopolish), [Tombo](https://github.com/nanoporetech/tombo) and [Nanocompore](https://github.com/tleonardi/nanocompore)) at per-transcript level. Then, it combines all results generated to produce a consensus prediction, which is more robust than those from individual softwares.  
 
-![NanoConsensus_scheme](/NanoConsensus_scheme.png)
+![NanoConsensus_scheme](/img/NanoConsensus_scheme.png)
 
 
 The first step of *NanoConsensus* analysis is to run the four different RNA modification detection algorithms in a pairwise manner - comparing a WT against an IVT sample through [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores). These algorithms will provide results at position and at transcript level. 
