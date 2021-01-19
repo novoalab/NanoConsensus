@@ -3,7 +3,8 @@
 *NanoConsensus* is an software to robustly identify putative RNA modified sites from direct RNA sequencing datasets. 
 
 ## Table of Contents  
-- [Description](#Description)
+- [General Description](#General-Description)
+- [Detailed Description](#Detailed-Description)
 - [Installation](#Installation)
 - [Running the code](#Running-the-code)
 - [Expected output](#Expected-output)
