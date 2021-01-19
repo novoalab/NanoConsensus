@@ -1,17 +1,31 @@
-# NanoConsensus
+# NanoConsensus: consensus prediction of RNA modifications from direct RNA nanopore sequencing data
 
-*NanoConsensus* is an algorithm that identifies putative modified kmers from direct RNA sequencing datasets. It performs pairwise comparisons with four different RNA detection softwares (*Epinano*, *Nanopolish*, *Tombo* and *Nanocompore*) at per transcript level. Then, it combines all results generated to produce a consensus prediction, which is more robust than those from individual softwares.  
+*NanoConsensus* is an software to robustly identify putative RNA modified sites from direct RNA sequencing datasets. 
 
-## Description
+## Table of Contents  
+- [Description](#Description)
+- [Installation](#Installation)
+- [Running the code](#Running-the-code)
+- [Expected output](#Expected-output)
+- [Citation](#Citation) 
+- [Contact](#Contact) 
+
+
+## General Description
+
+NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs KO) using four different RNA modification detection softwares ([Epinano](https://github.com/enovoa/EpiNano), [Nanopolish](https://github.com/jts/nanopolish), [Tombo](https://github.com/nanoporetech/tombo) and [Nanocompore](https://github.com/tleonardi/nanocompore)) at per-transcript level. Then, it combines all results generated to produce a consensus prediction, which is more robust than those from individual softwares.  
+
 ![NanoConsensus_scheme](/NanoConsensus_scheme.png)
 
-The first step of *NanoConsensus* analysis is to run the four different RNA modification detection algorithms in a pairwise manner - comparing a WT against an IVT sample through *NanoMod* module from Master of Pores (for more details, see here - MISSING LINK!). These algorithms will provide results at position and at transcript level. 
+## Detailed Description
+
+The first step of *NanoConsensus* analysis is to run the four different RNA modification detection algorithms in a pairwise manner - comparing a WT against an IVT sample through [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores). These algorithms will provide results at position and at transcript level. 
 
 *NanoConsensus* extracts the data from a specific transcript and software, it then performs Z-Score normalization for each dataset provided. The candidate positions are then selected by the resulting Z-Score which must be higher than the provided threshold the default value of which is 5. This threshold is able to be changed at the users discretion. In the following step, candidate positions from all software are extended into 5-mers. Flexible overlapping is then performed, providing those regions supported by data from two or more softwares, which are then saved as putative modified sites. 
 
-*Nanoconcesus* uses the median of the rescaled Z-score, which is rescaled between 0 and 1, at a specific position from each of the four different softwares providing a nanconcensus score for that position. This is performed at all positions across the determined transript. 
+*NanoConsensus* uses the median of the rescaled Z-score, which is rescaled between 0 and 1, at a specific position from each of the four different softwares providing a nanconcensus score for that position. This is performed at all positions across the determined transript. 
 
-In the last step, the *Nanocosensus scores* from all previously identified as putative modified sites are verified. This verification is performed by comparing the *Nanoconsensus score* to a threshold which is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. The decisive verified results are then reported whilst all unverified results are discarded.
+In the last step, the *NanoConsensus scores* from all previously identified as putative modified sites are verified. This verification is performed by comparing the *Nanoconsensus score* to a threshold which is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. The decisive verified results are then reported whilst all unverified results are discarded.
 
 ## Installation 
 If needed, install *Master of Pores* from its github repository:
@@ -24,7 +38,9 @@ Then, install *NanoConsensus* from its github repository:
 git clone https://github.com/ADelgadoT/NanoConsensus.git
 ```
 
-## Required input types
+## Running the code 
+
+### Required inputs 
 To perform NanoConsensus analysis, user must provide the **following inputs**:
 * Reference file (*.fa)
 * Transcript name
@@ -76,7 +92,7 @@ pos	chr	genomicPos	ref_id	strand	ref_kmer	GMM_logit_pvalue	GMM_logit_pvalue_cont
 2520	NA	NA	23S	NA	CTGGA	0.9999145725030434	0.9999997713740346	1.0	1.0	1.0	1.0	0.9998988895345491	0.9999961317288804	0.9997948160734869	0.9999943103243797	0.9998967130410295	0.999999547434852	0.9999171708631587	0.9999935368706631	full	2	Parent10_JW3718-90_1:3925/3177__JW3718_1:3981/3235	0.003922821293985011
 ```
 
-## Usage
+### Usage
 
 * Default command:
 ```
@@ -98,4 +114,15 @@ Rscript NanoConsensus.R -Epi_Sample /path/Epinano/WT/data -Epi_IVT /path/Epinano
 Rscript NanoConsensus.R -Epi_Sample /path/Epinano/WT/data -Epi_IVT /path/Epinano/IVT/data -NP_Sample /path/Nanopolish/WT/data -NP_IVT /path/Nanopolish/IVT/data -Tombo /path/Tombo/data -Nanocomp /path/Nanocompore/data -ini_pos start_position -fin_pos end_position -output output_name -fasta /path/reference/fasta -chr transcript_name -plot --NC_thr new_threshold
 ```
 
-## Expected output types
+## Expected output 
+
+**TO BE FILLED IN** 
+
+## Citation
+
+A pre-print is currently under preparation.
+
+## Contact 
+
+Please open an issue in the GitHub repo if you have any questions/doubts/suggestions about how to use this software. Thanks!
+
