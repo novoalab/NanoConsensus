@@ -1,0 +1,2 @@
+"Chr"	"Start"	"End"	"Epinano_RawScore"	"Nanopolish_RawScore"	"Tombo_RawScore"	"Nanocompore_RawScore"	"Epinano_Score"	"Nanopolish_Score"	"Tombo_Score"	"Nanocompore_Score"	"Epinano_Status"	"Nanopolish_Status"	"Tombo_Status"	"Nanocompore_Status"	"Kmer"	"RRACH_motif"
+"16S"	511	536	177.76447909029	2.63628455239892	112.828762333929	600.28039307292	28.1315544965619	2.43897424160257	8.82825531428257	12.3938821290665	"YES"	"NO"	"YES"	"YES"	"AACTCCGTGCCAGCAGCCGCGGTAATACGG"	FALSE
