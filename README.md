@@ -18,13 +18,16 @@ NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs K
 ![NanoConsensus_scheme](/img/NanoConsensus_scheme.png)
 
 
-The first step of *NanoConsensus* analysis is to run the four different RNA modification detection algorithms in a pairwise manner - comparing a WT against an IVT sample through [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores). These algorithms will provide results at position and at transcript level. 
+*NanoConsensus* performs the following steps: 
+* **1. Running RNA modification detection softwares** The first step of *NanoConsensus*  runs the four different RNA modification detection algorithms (EpiNano, Tombo, Nanopolish and Nanocompore) in a pairwise manner (i.e. comparing a WT/control/condition1 against an IVT/Knockout/Condition2 sample. This step is implemented in the form of Nextflow pipeline, and has been embedded [Master of Pores](https://github.com/biocorecrg/master_of_pores), in the form of an updated [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module. These algorithms will produce scores (p-values, differential error or differential current intensity) at per-transcript level for each individual position. 
 
-*NanoConsensus* extracts the data from a specific transcript and software, it then performs Z-Score normalization for each dataset provided. The candidate positions are then selected by the resulting Z-Score which must be higher than the provided threshold the default value of which is 5. This threshold is able to be changed at the users discretion. In the following step, candidate positions from all software are extended into 5-mers. Flexible overlapping is then performed, providing those regions supported by data from two or more softwares, which are then saved as putative modified sites. 
+* **2 Z-Score normalization** *NanoConsensus* then performs Z-Score normalization for each dataset and method (EpiNano, Tombo, Nanopolish and Nanocompare), in a per-transcript manner.  Z-scores are then used to select candidate RNA modified positions for each independent software, which must be higher than the provided user-defined threshold (default value = 5). 
 
-*NanoConsensus* uses the median of the rescaled Z-score, which is rescaled between 0 and 1, at a specific position from each of the four different softwares providing a nanconcensus score for that position. This is performed at all positions across the determined transript. 
+* **3 Flexible overlapping** In the following step, candidate positions for each individual software identified in step 2 are extended into 5-mers. Flexible overlapping is then performed to identify overlapping k-mers across softares. The regions supported by two or more softwares are then saved as putative modified sites. 
 
-In the last step, the *NanoConsensus scores* from all previously identified as putative modified sites are verified. This verification is performed by comparing the *Nanoconsensus score* to a threshold which is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. The decisive verified results are then reported whilst all unverified results are discarded.
+* **4 Rescaling of Nanoconsensus scores** *NanoConsensus* uses the median of the rescaled Z-score, which is rescaled between 0 and 1, at a specific position from each of the four different softwares providing a nanconcensus score for that position. This is performed at all positions across the determined transript. 
+
+* **5** In the last step, the *NanoConsensus scores* from all previously identified as putative modified sites are verified. This verification is performed by comparing the *Nanoconsensus score* to a threshold which is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. The decisive verified results are then reported whilst all unverified results are discarded.
 
 ## Installation 
 If needed, install *Master of Pores* from its github repository:
