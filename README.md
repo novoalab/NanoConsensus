@@ -25,7 +25,7 @@ NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs K
 
 * **3. Flexible overlapping.** In the following step, candidate positions for each individual software identified in step 2 are extended into 5-mers. Flexible overlapping is then performed to identify overlapping k-mers across softares. The regions supported by two or more softwares are then saved as putative modified sites. 
 
-* **4. Re-scaling of Nanoconsensus scores.** Z-score values are affected by coverage of the transcript. Thus, to have final merged results that are comparable across transcripts, *NanoConsensus* will report rescaled Z-score values between 0 and 1. This is performed at all positions across the determined transript. 
+* **4. Re-scaling of NanoConsensus scores.** Z-score values are affected by coverage of the transcript. Thus, to have final merged results that are comparable across transcripts, *NanoConsensus* will report rescaled Z-score values between 0 and 1. This is performed at all positions across the determined transript. 
 
 * **5.** In the last step, the *NanoConsensus scores* from all previously identified as putative modified sites are verified. This verification is performed by comparing the *Nanoconsensus score* to a threshold which is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. The decisive verified results are then reported whilst all unverified results are discarded.
 
