@@ -13,7 +13,7 @@ suppressMessages(library('ggnewscale'))
 suppressMessages(library('ggrepel'))
 
 ##Import accessory functions:
-source('Accessory_functions_consensusNanoMod.R')
+source('./scripts/Accessory_functions_consensusNanoMod.R')
 
 ##Argument parser:
 #Create parser object
@@ -27,11 +27,12 @@ parser$add_argument("-ini_pos", "--Initial_position", type="integer", default=50
 parser$add_argument("-fin_pos", "--Final_position", type="integer", help="Final position.")
 parser$add_argument("-plot", "--Plotting", action="store_true", help="Plot significant positions for all methods.")
 parser$add_argument("-chr", "--Chr", type="character", help="Character to study.")
-parser$add_argument("--MZS_thr", default=2.5, type="double", 
+parser$add_argument("--MZS_thr", default=5, type="double", 
                     help="Modified Z-Score threshold for all results [default %(default)]")
 parser$add_argument("--NC_thr", default=5, type="double", 
                     help="NanoConsensus score threshold for all results [default %(default)]")
 parser$add_argument("-autoscale", "--Autoscaling", action="store_true", help="Generate additional plots with autoscale within data from the same software.")
+parser$add_argument("-exclude", "--Exclude", nargs='+', type="integer", help="Exclude these positions from the analysis (SNPs) - it will exclude the 17-mer.")
 
 
 #EPINANO:
@@ -57,16 +58,16 @@ args <- parser$parse_args()
 
 print('Processing data')
 ##EPINANO processing: 
-epinano_data <- epinano_processing(args$Epinano_Sample, args$Epinano_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
+epinano_data <- epinano_processing(args$Epinano_Sample, args$Epinano_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr, args$Exclude)
 
 ##NANOPOLISH processing: 
-nanopolish_data <- nanopolish_processing(args$Nanopolish_Sample, args$Nanopolish_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
+nanopolish_data <- nanopolish_processing(args$Nanopolish_Sample, args$Nanopolish_IVT, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr, args$Exclude)
 
 ##TOMBO processing: 
-tombo_data <- tombo_processing(args$Tombo_Sample, args$thr_tombo_pos, args$thr_tombo_kmer, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
+tombo_data <- tombo_processing(args$Tombo_Sample, args$thr_tombo_pos, args$thr_tombo_kmer, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr, args$Exclude)
 
 ##NANOCOMPORE processing:
-nanocompore_data <- nanocomp_processing(args$Nanocomp_Sample, args$nanocomp_metric, args$thr_nanocomp, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr)
+nanocompore_data <- nanocomp_processing(args$Nanocomp_Sample, args$nanocomp_metric, args$thr_nanocomp, args$Initial_position, args$Final_position, args$MZS_thr, args$Chr, args$Exclude)
 
 ##Plotting significant positions across all methods:
 list_plotting <- list(epinano_data[[1]], nanopolish_data[[1]], tombo_data[[1]], nanocompore_data[[1]])
