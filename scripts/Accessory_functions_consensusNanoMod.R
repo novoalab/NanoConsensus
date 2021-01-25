@@ -839,7 +839,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_triple_venn_diagram(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_14), unlist(intersect_24), unlist(intersect_124)))
+    supported_kmers <- reduce(c(intersect_12,intersect_14,intersect_24,intersect_124))
 
   } else if (n1 == 0 & n2 == 0) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -865,7 +865,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_pairwise_venn_diagram(n1, n2, length_intersect_12, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unlist(intersect_12)
+    supported_kmers <- reduce(intersect_12)
     
   } else if (n2 == 0 & n3 == 0) { 
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -878,7 +878,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_pairwise_venn_diagram(n1, n4, length_intersect_14, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unlist(intersect_14)
+    supported_kmers <- reduce(intersect_14)
     
   } else if (n1 == 0 & n3 == 0) { 
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
