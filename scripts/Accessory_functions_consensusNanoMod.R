@@ -327,11 +327,21 @@ extract_length_from_GRobjects <- function(GRange_object) {
 
 overlapping_GRobjects <- function(GRange_object_1, GRange_object_2, length_object1, length_object2) {
   
-  if (length_object1 >= length_object2) {
-    intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap=1)
+  #Only perform the intersection if both GRange are valid:
+  if (is.null(GRange_object_1)==FALSE & is.null(GRange_object_2)==FALSE) {
+    
+    #Perform the intersections:
+    if (length_object1 >= length_object2) {
+      intersect_object <- subsetByOverlaps(GRange_object_2, GRange_object_1, minoverlap=1)
+    } else {
+      intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap=1)
+    }
+    
   } else {
-    intersect_object <- subsetByOverlaps(GRange_object_1, GRange_object_2, minoverlap=1)
+    
+    intersect_object <- GRanges()
   }
+  
   
   return(intersect_object)
   
@@ -682,16 +692,25 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
           
         }
         grNew <- GRanges(seqnames=chr,ranges=IRanges(as.integer(features[[1]][length(features[[1]])])-2, end = as.integer(features[[1]][length(features[[1]])])+2))
-        grList <- pc(grList,grNew)
-
+        
+        if(is.null(grList)==TRUE){
+          grList <- grNew
+        } else {
+          grList <- reduce(c(grList,grNew))
+        }
+      
       }
       
-      if(elementNROWS(grList) == 1) {
-        grList <- grList
-      } else {
-        grList <- do.call(c, grList)
-      }
+      #print(grList)
+      #print(length(grList))
+      #if(length(grList) == 1) {
+      #  grList <- grList
+      #} else {
+      #  print('issue')
+      # grList <- do.call(c, grList)
         
+      #}
+      
       assign(paste('gr',methods_name[j],sep=""), reduce(unique(grList)))
     
     } else {
@@ -754,7 +773,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_triple_venn_diagram(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123, methods_name, output_name)
   
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_23), unlist(intersect_123)))
+    supported_kmers <- reduce(c(intersect_12,intersect_13,intersect_23,intersect_123))
     
   } else if (n1 != 0 & n2 == 0 & n3 != 0 & n4 != 0 ) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -776,7 +795,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_triple_venn_diagram(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unique(c(unlist(intersect_13), unlist(intersect_14), unlist(intersect_34), unlist(intersect_134)))
+    supported_kmers <- reduce(c(intersect_13,intersect_14,intersect_34,intersect_134))
     
   } else if (n1 == 0 & n2 != 0 & n3 != 0 & n4 != 0 ) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -798,7 +817,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_triple_venn_diagram(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unique(c(unlist(intersect_23), unlist(intersect_24), unlist(intersect_34), unlist(intersect_234)))
+    supported_kmers <- reduce(c(intersect_23,intersect_24,intersect_34,intersect_234))
     
   } else if (n1 != 0 & n2 != 0 & n3 == 0 & n4 != 0 ) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -833,7 +852,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_pairwise_venn_diagram(n3, n4, length_intersect_34, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unlist(intersect_34)
+    supported_kmers <- reduce(intersect_34)
     
   } else if (n3 == 0 & n4 == 0) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -872,7 +891,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_pairwise_venn_diagram(n2, n4, length_intersect_24, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unlist(intersect_24)
+    supported_kmers <- reduce(intersect_24)
     
   } else {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
@@ -915,9 +934,9 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
                       length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
     
-    #Extract kmers supported by two or more softwares: 
-    supported_kmers <- unique(c(unlist(intersect_12), unlist(intersect_13), unlist(intersect_14), unlist(intersect_23), unlist(intersect_24),
-                                unlist(intersect_34), unlist(intersect_123), unlist(intersect_124), unlist(intersect_134), unlist(intersect_234), unlist(intersect_1234)))
+    #Extract kmers supported by two or more softwares:
+    supported_kmers <- reduce(c(intersect_12,intersect_13,intersect_14,intersect_23,intersect_24,
+                                intersect_34,intersect_123,intersect_124,intersect_134,intersect_234,intersect_1234))
   
   }
   
@@ -928,15 +947,19 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'))
   
   #Analyse the supported kmers - only if they are present:
-  filtered_supported_kmers <- overlapping_GRobjects(reduce(supported_kmers), GRanges(seqnames=all_kmers[[2]][,c('Chr')],ranges=IRanges(all_kmers[[2]][,c('Start')], end = all_kmers[[2]][,c('End')])),1,2)
-  if(extract_length_from_GRobjects(filtered_supported_kmers)!=0){
-    all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score)
-    kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
+  if (is.null(supported_kmers)==FALSE) {
+    filtered_supported_kmers <- overlapping_GRobjects(reduce(supported_kmers), GRanges(seqnames=all_kmers[[2]][,c('Chr')],ranges=IRanges(all_kmers[[2]][,c('Start')], end = all_kmers[[2]][,c('End')])),1,2)
     
-    #Plot NanoConsensus score across transcripts:
-    Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
-    
+    if(extract_length_from_GRobjects(filtered_supported_kmers)!=0){
+      all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score)
+      kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
+      
+      #Plot NanoConsensus score across transcripts:
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
+    }
+  
   } else {
+    
     all_ranges <- data.frame()
     #Plot NanoConsensus score across transcripts:
     Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
