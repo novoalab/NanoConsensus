@@ -147,6 +147,15 @@ By default, *NanoConsensus* generates two tab separated files which contain diff
 "16S"	511	536	177.76447909029	2.63628455239892	112.828762333929	600.28039307292	28.1315544965619	2.43897424160257	8.82825531428257	12.3938821290665	"YES"	"NO"	"YES"	"YES"	"AACTCCGTGCCAGCAGCCGCGGTAATACGG"	FALSE
 ```
 
+
+Additionally, it also creates two directories:
+* **Bedgraph_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo, Nanocompore and NanoConsensus) can be found. Each contains the score per-position from one specific software. These tracks help visualizing scores across the transcript. ([Check output](example_output/Bedgraph_tracks))
+![Bedgraph_tracks](/img/Bedgraph_tracks.png)
+
+* **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/Kmer_tracks))
+![Kmer_tracks](/img/Kmers_tracks.png)
+
+
 If the user specifies the option `-plot` when running *NanoConsensus*, two additional plots are generated:
 * **Intermediate Z-Score tracks per software**: it shows the Z-Score values across the transcript for all softwares. In red, it also shows the candidate sites identified from each algorithm data. ([Check output](example_output/m7G-100_16S_MZS-5_rep1.pdf))
 
