@@ -1,11 +1,11 @@
 ###Script which contains multiple R functions used to generate consensus putative modified positions from NanoMod results. 
 
 #Processing Epinano results:
-epinano_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP) {
+epinano_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   
   #Import and clean data:
   sample <- read.csv(sample_file,stringsAsFactors = FALSE)
-  sample <- subset(sample, cov>30)
+  sample <- subset(sample, cov>Coverage)
   sample <- subset(sample, pos>=initial_position) 
   sample <- subset(sample, pos<=final_position)
   sample$reference <- paste(sample$X.Ref, sample$pos, sep='_')
@@ -14,7 +14,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   colnames(sample) <- c('Reference', 'Position', 'Difference_sample', 'Merge')
   
   ivt <- read.csv(ivt_file,stringsAsFactors = FALSE)
-  ivt <- subset(ivt, cov>30)
+  ivt <- subset(ivt, cov>Coverage)
   ivt <- subset(ivt, pos>=initial_position) 
   ivt <- subset(ivt, pos<=final_position)
   ivt$reference <- paste(ivt$X.Ref, ivt$pos, sep='_')
@@ -63,13 +63,13 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   return(list(plotting_positions,significant_positions))
 }
 
-nanopolish_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP) {
+nanopolish_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   #Import data:
   sample <- read.delim(sample_file)
   
   #Add sample information:
   sample$read_name <- 'Nanopolish'
-  sample <- subset(sample, coverage>30)
+  sample <- subset(sample, coverage>Coverage)
   colnames(sample)<- c("contig_wt","position","reference_kmer_wt", "feature_wt", "event_level_median_wt", 'coverage')
   sample<- subset(sample, contig_wt == chr)
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
@@ -77,7 +77,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   #Import KO: 
   raw_data_ivt <-read.delim(ivt_file)
   raw_data_ivt$read_name <- 'IVT'
-  raw_data_ivt <- subset(raw_data_ivt, coverage>30)
+  raw_data_ivt <- subset(raw_data_ivt, coverage>Coverage)
   colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "feature", "event_level_median_ko", 'coverage')
   raw_data_ivt <- subset(raw_data_ivt, contig_ko == chr)
   raw_data_ivt$reference <- paste(raw_data_ivt$contig_ko, raw_data_ivt$position, sep='_')
@@ -119,14 +119,14 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   
 }
 
-tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, final_position, MZS_thr, chr, exclude_SNP) {
+tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   #Import data:
   sample <- read.delim(sample_file)
 
   if (nrow(sample)>0) {
     #Apply some filters and labels:
     sample$Feature <- 'Tombo'
-    sample <- subset(sample, Coverage_Sample>30 & Coverage_IVT>30)
+    sample <- subset(sample, Coverage_Sample>Coverage & Coverage_IVT>Coverage)
     colnames(sample) <- c('Reference', 'Chr', 'Position', 'Difference', 'Coverage_Sample', 'Coverage_IVT', 'Statistic_kmer',
                              'Feature')
     
@@ -173,13 +173,13 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
   return(list(plotting_positions, significant_positions))
 }
 
-nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initial_position, final_position, MZS_thr, chr, exclude_SNP){
+nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initial_position, final_position, MZS_thr, chr, exclude_SNP, nanocomp_stat){
   #Import data:
   sample <- read.delim(sample_file)
   if (nrow(sample)>0) {
     
     #Transform metric:
-    sample$stat <- log(sample$GMM_logit_pvalue_context_4)
+    sample$stat <- log(sample[[nanocomp_stat]])
     sample$log_stat <- (sample$stat)*(-1)
     
     #Prepare plotting data:
@@ -293,7 +293,7 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name) {
     plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
            geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=2, fill = "red") + 
            geom_label_repel(data=subset(data, Position %in% kmers_limits),aes(label = Position, y = Merged_Score), size = 8, label.size = 0.75) +
-           ylab('NanoConsensus Score') +
+           ylab('NanoConsensus Score') + 
            theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                              axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                              legend.text=element_text(size=22)))
@@ -303,7 +303,7 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name) {
     data$Position <- data$Start+2
     pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
     plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
-           ylab('NanoConsensus Score') +
+           ylab('NanoConsensus Score') + 
            theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                              axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                              legend.text=element_text(size=22)))
@@ -541,7 +541,7 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
       single_pos_3 <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == initial_position+3), 5])
       single_pos_4 <- overwrite_NaNs(list_plotting[[list_number]][which(list_plotting[[list_number]]$Position == initial_position+4), 5])
       
-      #Loop over the kmer to find if Epinano identified it:
+      #Loop over the kmer to find if specific softwares identified it:
       kmer_positions <- c(single_pos_0, single_pos_1, single_pos_2, single_pos_3, single_pos_4)
       if(any(kmer_positions >= MZS_thr, na.rm = TRUE)){
         soft_status <- c(soft_status, 'YES')
@@ -559,7 +559,43 @@ extracting_status <- function (positions_df, list_number, summit, MZS_thr) {
   return(final)
 }
 
-extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, MZS_thr, summit, Consensus_score) {
+calcNanoConsensusScore <- function(data, type) {
+  if (type=="m66A") {
+    w <- c(0.36,0.1,0.21,0.33)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else if (type=="m5C") {
+    w <- c(0.25,0.05,0.70,0)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else if (type=="m7G") {
+    w <- c(0.33,0.25,0.42,0)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else if (type=="Am") {
+    w <- c(0.23,0.07,0.55,0.15)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else if (type=="Um") {
+    w <- c(0.27,0.12,0.5,0.11)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else if (type=="pU") {
+    w <- c(0.22,0.19,0.55,0.04)
+    processed_data <- sweep(data, MARGIN=2, w, "*")
+    return(apply(processed_data,1,sum,na.rm = TRUE))
+    
+  } else {
+    return(apply(data,1,median,na.rm = TRUE))
+  }
+}
+
+extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, MZS_thr, summit, Consensus_score, model_score) {
   
   #Create vectors to store software data:
   epinano_rawScore <- c()
@@ -606,6 +642,7 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
   positions_df$Nanocompore_Status <- nanocompore_data$status
   
   positions_NanoConsensus <- c()
+  
   ##Calculate the merged_score:
   #Re-scaling:
   if (summit == F){
@@ -614,11 +651,11 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
 
     #Re-scale Modified Z-Scores between 0 and 1:
     for (i in seq(1:length(data))) {
-      data[,i] <- rescale(unlist(data[i]), to=c(0,1))
+      data[,i] <- rescale(unlist(data[i]), to=c(0,1), na.rm=TRUE)
     
     }
     
-    data[is.na(data)] <- 0
+    #data[is.na(data)] <- 0
     
     #Rescale outputs 0.5 when the software gives the same MZS for all positions - correcting for it if needed:
     if (length(unique(data$positions_df.Epinano_Score)) == 1 || all(is.na(unique(data$positions_df.Epinano_Score)))) {
@@ -637,9 +674,12 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
       data$positions_df.Nanocompore_Score <- 0 
     }
     
-    print(head(data))
+    #print(head(data))
+    
     #Calculate NanoConsensus score:
-    positions_df$Merged_Score <- apply(data,1,median,na.rm = TRUE)
+    write(paste("Step 3: Calculating NanoConsensus scores with model: ", model_score, sep = ""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    positions_df$Merged_Score <- calcNanoConsensusScore(data, model_score)
+    
     threshold <- Consensus_score*median(positions_df$Merged_Score,  na.rm = TRUE)
     print(threshold)
     positions_NanoConsensus <- subset(positions_df, Merged_Score >= threshold)
@@ -648,18 +688,82 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
   return(list(positions_df, positions_NanoConsensus))
 }
 
-kmer_analysis <- function (all_ranges, fasta_file, output_name) {
+bedgraph_tracks <- function (data, output_name, color, methods) {
+  for (i in 4:(ncol(data))){
+    #Check if output directory exists - if not, create it:
+    if (!dir.exists("./Bedgraph_tracks")){
+      dir.create("Bedgraph_tracks", showWarnings = FALSE)
+    }
+    
+    #Sliced dataset:
+    subset_data <- data.frame(data[,c(1,2,3,i)])
+    
+    #From kmers to individual positions:
+    subset_data$Start <- subset_data$Start+1
+    subset_data$End <- subset_data$End-2
+    
+    #Removing NAs - otherwise, track wont be loaded into IGV:
+    subset_data[is.na(subset_data)] <- 0
+    
+    #Prepare the header:
+    header_track <- paste(" \'1i track type=bedGraph name=", methods[i-3]," autoScale=on visibility=full color=",color[i-3]," altColor=",color[i-3]," priority=20 graphType=bar\'", sep="")
+    
+    #Generate bedgraph tracks:
+    write.table(subset_data, file = paste("Bedgraph_tracks/", methods[i-3], "-", str_split_fixed(output_name,"_Raw_kmers.txt",2)[1],'.bedgraph', sep=''), 
+                  sep = '\t', row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+    #Include the header to be able to load the track into IGV:
+    command=paste("sed -i", header_track, paste(" ./Bedgraph_tracks/", methods[i-3], "-", str_split_fixed(output_name,"_Raw_kmers.txt",2)[1],".bedgraph", sep=''), sep="")
+    try(system(command))
+  }
+}
+
+bed_tracks <- function (data, output_name, color, methods) {
+  #Check if output directory exists - if not, create it:
+  if (!dir.exists("./Kmer_tracks")){
+    dir.create("Kmer_tracks", showWarnings = FALSE)
+  }
+  
+  for (i in 1:length(data)){
+    bed_data <- data.frame(seqnames(data[[i]]),
+                     start(data[[i]]),
+                     end(data[[i]]),
+                     c(rep(".", length(data[[i]]))),
+                     c(rep(0, length(data[[i]]))),
+                     strand(data[[i]]), start(data[[i]]),end(data[[i]]), c(rep(color[i], length(data[[i]]))))
+     
+    
+    #Prepare the header:
+    header_track <- paste(" \'1i track name=", methods[i],"_kmers visibility=2 itemRgb=\"On\"\'", sep="")
+    
+    #Generate bed tracks:
+    write.table(bed_data, file = paste("Kmer_tracks/", methods[i], "-", output_name, "-kmers.bed", sep=''), 
+                sep = '\t', row.names = FALSE, col.names = FALSE, quote = FALSE)
+    
+    #Include the header to be able to load the track into IGV:
+    command=paste("sed -i", header_track, paste(" ./Kmer_tracks/", methods[i], "-", output_name, "-kmers.bed", sep=''), sep="")
+    try(system(command))
+    
+  }
+}
+
+kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks) {
   print('Kmer analysis')
   kmer_data <- extract_kmers(all_ranges, fasta_file)
   all_ranges$Kmer <- kmer_data[[1]]
   all_ranges$RRACH_motif <- kmer_data[[2]]
   all_ranges <- all_ranges[order(all_ranges$Start, decreasing = FALSE),]
+   
+  if (tracks){
+    color_beds <- c("0,166,81", "102,45,145", "0,174,239","242,101,34","190,30,45")
+    bedgraph_tracks(all_ranges[,c(1,2,3,8,9,10,11,16)], output_name, color_beds, c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore', 'NanoConsensus'))
+  }
   
   #Merging data per kmer: 
   write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
 }
 
-analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score) {
+analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score) {
   epinano <- list_significant[[1]]
   nanopolish <- list_significant[[2]]
   tombo <- list_significant[[3]]
@@ -669,7 +773,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   methods_name <- c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore')
   
   #Create grRange objects with kmers per each method: 
-  print('Transforming data into GRange objects')
+  #print('Transforming data into GRange objects')
   for (j in 1:length(methods_name)) {
     
     #Transform the positions in kmers using GRanges library:
@@ -701,16 +805,6 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
       
       }
       
-      #print(grList)
-      #print(length(grList))
-      #if(length(grList) == 1) {
-      #  grList <- grList
-      #} else {
-      #  print('issue')
-      # grList <- do.call(c, grList)
-        
-      #}
-      
       assign(paste('gr',methods_name[j],sep=""), reduce(unique(grList)))
     
     } else {
@@ -721,8 +815,6 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   
   ##Perform intersections:
   #Check how many elements are in each GRange object and if it is null, create an empty one:
-  print('Perform intersections')
-  
   if (is.null(grEpinano)==TRUE){
     grEpinano <- GRanges()
     n1 <- 0
@@ -751,8 +843,17 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     n4 <- length(grNanocompore)
   }
   
-  print(c(n1,n2,n3,n4))
+  ##Generate bed files:
+  color_beds <- c("0,166,81", "102,45,145", "0,174,239","242,101,34")
+  bed_tracks(list(grEpinano, grNanopolish, grTombo, grNanocompore), output_name, color_beds, c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore'))
   
+  ##Update log file:
+  write(paste('-Positions identified by Epinano:', n1, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+  write(paste('-Positions identified by Nanopolish:', n2, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+  write(paste('-Positions identified by Tombo:', n3, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+  write(paste('-Positions identified by Nanocompore:', n4, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+  write('Kmers supported by multiple softwares:', file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+
   if (n1 != 0 & n2 != 0 & n3 != 0 & n4 == 0 ) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
     intersect_12 <- overlapping_GRobjects(grEpinano, grNanopolish, n1, n2)
@@ -768,9 +869,13 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_123 <- extract_length_from_GRobjects(intersect_123)
 
     #Venn Diagram:  
-    print(c(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123))
+    write(paste('-Positions identified by Epinano-Nanopolish:', length_intersect_12, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Tombo:', length_intersect_13, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Tombo:', length_intersect_23, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanopolish-Tombo:', length_intersect_123, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Epinano', 'Nanopolish', 'Tombo')
-    draw_triple_venn_diagram(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123, methods_name, output_name)
+    #draw_triple_venn_diagram(n1, n2, n3, length_intersect_12, length_intersect_13, length_intersect_23, length_intersect_123, methods_name, output_name)
   
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(c(intersect_12,intersect_13,intersect_23,intersect_123))
@@ -790,7 +895,11 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_134 <- extract_length_from_GRobjects(intersect_134)
     
     #Venn Diagram:  
-    print(c(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134))
+    write(paste('-Positions identified by Epinano-Tombo:', length_intersect_13, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanocompore:', length_intersect_14, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Tombo-Nanocompore:', length_intersect_34, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Tombo-Nanocompore:', length_intersect_134, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Epinano', 'Tombo', 'Nanocompore')
     draw_triple_venn_diagram(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134, methods_name, output_name)
     
@@ -812,7 +921,11 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_234 <- extract_length_from_GRobjects(intersect_234)
     
     #Venn Diagram:  
-    print(c(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234))
+    write(paste('-Positions identified by Nanopolish-Tombo:', length_intersect_23, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Nanocompore:', length_intersect_24, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Tombo-Nanocompore:', length_intersect_34, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Tombo-Nanocompore:', length_intersect_234, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Nanopolish', 'Tombo', 'Nanocompore')
     draw_triple_venn_diagram(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234, methods_name, output_name)
     
@@ -834,7 +947,11 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_124 <- extract_length_from_GRobjects(intersect_124)
     
     #Venn Diagram:  
-    print(c(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124))
+    write(paste('-Positions identified by Epinano-Nanopolish:', length_intersect_12, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanocompore:', length_intersect_14, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Nanocompore:', length_intersect_24, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanopolish-Nanocompore:', length_intersect_124, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Epinano', 'Nanopolish', 'Nanocompore')
     draw_triple_venn_diagram(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124, methods_name, output_name)
     
@@ -847,7 +964,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_34 <- extract_length_from_GRobjects(intersect_34)
     
     #Venn Diagram:  
-    print(c(n3, n4, length_intersect_34))
+    write(paste('-Positions identified by Tombo-Nanocompore:', length_intersect_34, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Tombo', 'Nanocompore')
     draw_pairwise_venn_diagram(n3, n4, length_intersect_34, methods_name, output_name)
     
@@ -860,7 +978,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_12 <- extract_length_from_GRobjects(intersect_12)
     
     #Venn Diagram:  
-    print(c(n1, n2, length_intersect_12))
+    write(paste('-Positions identified by Epinano-Nanopolish:', length_intersect_12, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Epinano', 'Nanopolish')
     draw_pairwise_venn_diagram(n1, n2, length_intersect_12, methods_name, output_name)
     
@@ -873,7 +992,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_14 <- extract_length_from_GRobjects(intersect_14)
     
     #Venn Diagram:  
-    print(c(n1, n4, length_intersect_14))
+    write(paste('-Positions identified by Epinano-Nanocompore:', length_intersect_14, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Epinano', 'Nanocompore')
     draw_pairwise_venn_diagram(n1, n4, length_intersect_14, methods_name, output_name)
     
@@ -886,7 +1006,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_24 <- extract_length_from_GRobjects(intersect_24)
     
     #Venn Diagram:  
-    print(c(n2, n4, length_intersect_24))
+    write(paste('-Positions identified by Nanopolish-Nanocompore:', length_intersect_24, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
     methods_name <-  c('Nanopolish', 'Nanocompore')
     draw_pairwise_venn_diagram(n2, n4, length_intersect_24, methods_name, output_name)
     
@@ -929,10 +1050,21 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     length_intersect_1234 <- extract_length_from_GRobjects(intersect_1234)
 
     #Venn Diagram:  
-    print(c(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
-            length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234))
-    draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
-                      length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
+    write(paste('-Positions identified by Epinano-Nanopolish:', length_intersect_12, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Tombo:', length_intersect_13, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanocompore:', length_intersect_14, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Tombo:', length_intersect_23, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Nanocompore:', length_intersect_24, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Tombo-Nanocompore:', length_intersect_34, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanopolish-Tombo:', length_intersect_123, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanopolish-Nanocompore:', length_intersect_124, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Tombo-Nanocompore:', length_intersect_134, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Nanopolish-Tombo-Nanocompore:', length_intersect_123, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste('-Positions identified by Epinano-Nanopolish-Tombo-Nanocompore:', length_intersect_1234, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
+    
+    #draw_venn_diagram(n1, n2, n3, n4, length_intersect_12, length_intersect_13, length_intersect_14, length_intersect_23, length_intersect_24,
+    #                  length_intersect_34, length_intersect_123, length_intersect_124, length_intersect_134, length_intersect_234, length_intersect_1234, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares:
     supported_kmers <- reduce(c(intersect_12,intersect_13,intersect_14,intersect_23,intersect_24,
@@ -943,19 +1075,27 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   ##Kmer analysis: 
   #Analysis of all kmers across the chromosome:
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
-  all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting, MZS_thr, FALSE, Consensus_score)
-  kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'))
+  all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting, MZS_thr, FALSE, Consensus_score, model_score)
+  kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'), TRUE)
   
   #Analyse the supported kmers - only if they are present:
   if (is.null(supported_kmers)==FALSE) {
     filtered_supported_kmers <- overlapping_GRobjects(reduce(supported_kmers), GRanges(seqnames=all_kmers[[2]][,c('Chr')],ranges=IRanges(all_kmers[[2]][,c('Start')], end = all_kmers[[2]][,c('End')])),1,2)
     
     if(extract_length_from_GRobjects(filtered_supported_kmers)!=0){
-      all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score)
-      kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'))
+      all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score, model_score)
+      kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'), FALSE)
       
       #Plot NanoConsensus score across transcripts:
       Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
+      write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+      
+    } else {
+      all_ranges <- data.frame()
+      #Plot NanoConsensus score across transcripts:
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
+      write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+      
     }
   
   } else {
@@ -963,8 +1103,9 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     all_ranges <- data.frame()
     #Plot NanoConsensus score across transcripts:
     Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
+    write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    
   }
-
-  
+  write("ANALYSIS COMPLETED SUCCESSFULLY", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
   
 }
