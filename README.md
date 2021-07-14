@@ -110,11 +110,6 @@ pos	chr	genomicPos	ref_id	strand	ref_kmer	GMM_logit_pvalue	GMM_logit_pvalue_cont
 Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S 
 ```
 
-* Use the following command to produce intermediate and final plots:
-```
-Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S  -plot
-```
-
 * Use the following command to change the Z-Score threshold (default = *5*) to identify putative modified sites from individual software data:
 ```
 Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S -plot --MZS_thr 4
@@ -127,7 +122,7 @@ Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.s
 
 ## Expected output 
 
-By default, *NanoConsensus* generates two tab separated files which contain different results:
+By default, *NanoConsensus* generates all files listed below:
 * **Raw_kmers** file: it contains results for all positions across the transcript - ZScores for all softwares, NanoConsensus score, kmer sequence and if the kmer contains the RRACH motif ([Check full output](example_output/m7G-100_16S_MZS-5_rep1_Raw_kmers.txt))
 ```
 "Chr"	"Start"	"End"	"Epinano_RawScore"	"Nanopolish_RawScore"	"Tombo_RawScore"	"Nanocompore_RawScore"	"Epinano_Score"	"Nanopolish_Score"	"Tombo_Score"	"Nanocompore_Score"	"Epinano_Status"	"Nanopolish_Status"	"Tombo_Status"	"Nanocompore_Status"	"Merged_Score"	"Kmer"	"RRACH_motif"
@@ -147,6 +142,8 @@ By default, *NanoConsensus* generates two tab separated files which contain diff
 "16S"	511	536	177.76447909029	2.63628455239892	112.828762333929	600.28039307292	28.1315544965619	2.43897424160257	8.82825531428257	12.3938821290665	"YES"	"NO"	"YES"	"YES"	"AACTCCGTGCCAGCAGCCGCGGTAATACGG"	FALSE
 ```
 
+* **NanoConsensus_Scores** pdf file: it contains tracks with both Z-Scores for all RNA detection algorithms and NanoConsensus scores across the transcript. Coloured, positions supported by each one of the softwares. 
+![Zscores_tracks](/img/NanoConsensus_Scores.png)
 
 Additionally, it also creates two directories:
 * **Bedgraph_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo, Nanocompore and NanoConsensus) can be found. Each contains the score per-position from one specific software. These tracks help visualizing scores across the transcript. ([Check output](example_output/Bedgraph_tracks))
@@ -154,16 +151,6 @@ Additionally, it also creates two directories:
 
 * **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/Kmer_tracks))
 ![Kmer_tracks](/img/Kmers_tracks.png)
-
-
-If the user specifies the option `-plot` when running *NanoConsensus*, two additional plots are generated:
-* **Intermediate Z-Score tracks per software**: it shows the Z-Score values across the transcript for all softwares. In red, it also shows the candidate sites identified from each algorithm data. ([Check output](example_output/m7G-100_16S_MZS-5_rep1.pdf))
-
-![Zscores_tracks](/img/ZScores-track.png)
-
-* **NanoConsensus score track**: it shows all NanoConsensus scores across the transcripts. The putative modified sites are indicated in red. ([Check output](example_output/m7G-100_16S_MZS-5_rep1-NanoConsensus_Score.pdf))
-
-![NanoConsensus_track](/img/NanoConsensus_track.png)
 
 ## Citation
 
