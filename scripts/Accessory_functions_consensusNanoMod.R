@@ -241,75 +241,80 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   }
   
   #Set Feature into a factor for plotting purposes:
-  initial_df$sample_f <- factor(initial_df$Feature)
-  putative_positions$sample_f <- factor(putative_positions$Feature)
+  initial_df$sample_f <- factor(initial_df$Feature, levels = c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore'))
+  putative_positions$sample_f <- factor(putative_positions$Feature, levels = c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore'))
   
   #Plotting:
-  pdf(file=paste(output_name,".pdf", sep = ""), bg = "transparent", width = 26, height = 16 )
-  plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
+  barplot_4soft <- ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=sample_f)) + ggtitle(output_name) +
           geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
-          new_scale_color() + xlim(initial_pos, final_pos) +
+          new_scale_color() + xlim(initial_pos, final_pos) + ylab('Z-Score ((x-median)/sd)') + xlab("") +
           geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=4) + 
-          scale_fill_gradient(low="#ff7f7f", 
-                              high="#ff0000") + 
+          scale_fill_manual(values = c("#00A651", "#662D91", "#00AEEF", "#F59364")) +
           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                            legend.text=element_text(size=22)) + 
-         facet_grid(sample_f ~ . , scales="fixed") )
-  dev.off()
-  
-  if (autoscaling == TRUE) {
-    #Plotting:
-    pdf(file=paste(output_name,"_AUTOSCALE.pdf", sep = ""),bg = "transparent", width = 26, height = 16 )
-    plot(ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=Modified_ZScore)) + ggtitle(output_name) +
-           geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=1.5, fill = "#dcdcdd") +
-           new_scale_color() +
-           geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=1.5) + 
-           scale_fill_gradient(low="#ff7f7f", 
-                               high="#ff0000") + 
-           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
-                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22)) + 
-           facet_grid(sample_f ~ . , scales="free_y") )
-    dev.off()
-  }
-  
+                            legend.text=element_text(size=22), legend.position = "none") + 
+         facet_grid(sample_f ~ . , scales="fixed")
+
+  return(barplot_4soft)
 }
 
-Nanoconsensus_plotting <- function(data, supported_kmers, output_name) {
-  #Extracting supported positions:
+Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft) {
+  #Extracting supported kmers:
   supported_positions <- c()
   kmers_limits <- c()
+  barplot_4soft <- barplot_4soft
   
+  #Format data:
+  data$Position <- data$Start+2
+  data$Feature <- "NanoConsensus"
+  
+  #Generate NanoConsensus track:
   if (nrow(supported_kmers)!=0) {
+    #If supported kmers, include them in the plot object:
     for (i in seq(1, nrow(supported_kmers))) {
       supported_positions <- c(supported_positions, seq(supported_kmers[i,2], supported_kmers[i,3]))
       kmers_limits <- c(kmers_limits, supported_kmers[i,2], supported_kmers[i,3])
+      
     }
     
-    #Plotting:
-    data$Position <- data$Start+2
-    pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
-    plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
-           geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=2, fill = "red") + 
-           geom_label_repel(data=subset(data, Position %in% kmers_limits),aes(label = Position, y = Merged_Score), size = 8, label.size = 0.75) +
+    #Retrieve borders of supported kmers:
+    limits_supp_kmers <- subset(data[,c(16,17,18)], Position %in% kmers_limits)
+
+    #Adding end of the transcript border if needed:
+    if (nrow(limits_supp_kmers)!=length(kmers_limits)) {
+      
+    }
+
+    #Create plot object:
+    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
+           geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
+           geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
+           geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
            ylab('NanoConsensus Score') + 
            theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                              axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22)))
-    dev.off()
+                             legend.text=element_text(size=22)) +
+           facet_grid(Feature ~ . , scales="fixed")
     
   } else {
-    data$Position <- data$Start+2
-    pdf(file=paste(output_name,"NanoConsensus_Score.pdf", sep = "-"), bg = "transparent", width = 26, height = 16 )
-    plot(ggplot(data, aes(x=Position, y=Merged_Score)) + ggtitle(output_name) + geom_bar(stat= "identity", width=2) + ylim(0,1) +
+    #Create plot object if there arent any supported kmers:
+    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=2) + ylim(0,1) +
            ylab('NanoConsensus Score') + 
            theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                              axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22)))
-    dev.off()
+                             legend.text=element_text(size=22))
   }
- 
+  
+  #Plot both plots in the same pdf file:
+  pdf(file=paste(output_name,"NanoConsensus_Scores.pdf", sep = "-"), bg = "transparent", width = 26, height = 15.75 )
+  g2 <- ggplotGrob(barplot_4soft)
+  g3 <- ggplotGrob(nanoconsensus_plot)
+  g <- rbind(g2, g3, size = "last")
+  g$widths <- unit.pmax(g2$widths, g3$widths)
+  #grid.newpage()
+  grid.draw(g)
+  
+  dev.off()
   
 }
 
@@ -674,10 +679,8 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
       data$positions_df.Nanocompore_Score <- 0 
     }
     
-    #print(head(data))
-    
     #Calculate NanoConsensus score:
-    write(paste("Step 3: Calculating NanoConsensus scores with model: ", model_score, sep = ""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    write(paste("Step 4: Calculating NanoConsensus scores with model: ", model_score, sep = ""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     positions_df$Merged_Score <- calcNanoConsensusScore(data, model_score)
     
     threshold <- Consensus_score*median(positions_df$Merged_Score,  na.rm = TRUE)
@@ -763,7 +766,7 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks) {
   write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
 }
 
-analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score) {
+analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score, barplot_4soft) {
   epinano <- list_significant[[1]]
   nanopolish <- list_significant[[2]]
   tombo <- list_significant[[3]]
@@ -1087,14 +1090,14 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
       kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'), FALSE)
       
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name)
-      write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name, barplot_4soft)
+      write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
     } else {
       all_ranges <- data.frame()
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
-      write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft)
+      write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
     }
   
@@ -1102,8 +1105,8 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     
     all_ranges <- data.frame()
     #Plot NanoConsensus score across transcripts:
-    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name)
-    write("Step 4: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft)
+    write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
   }
   write("ANALYSIS COMPLETED SUCCESSFULLY", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
