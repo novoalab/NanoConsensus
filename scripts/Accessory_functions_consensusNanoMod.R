@@ -259,6 +259,7 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
 }
 
 Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft) {
+  
   #Extracting supported kmers:
   supported_positions <- c()
   kmers_limits <- c()
@@ -279,12 +280,12 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
     
     #Retrieve borders of supported kmers:
     limits_supp_kmers <- subset(data[,c(16,17,18)], Position %in% kmers_limits)
-
+    
     #Adding end of the transcript border if needed:
-    if (nrow(limits_supp_kmers)!=length(kmers_limits)) {
-      
-    }
-
+    #if (nrow(limits_supp_kmers)!=length(kmers_limits)) {
+    #  
+    #}
+    
     #Create plot object:
     nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
            geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
@@ -298,11 +299,11 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
     
   } else {
     #Create plot object if there arent any supported kmers:
-    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=2) + ylim(0,1) +
+    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
            ylab('NanoConsensus Score') + 
            theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                              axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22))
+                             legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
   }
   
   #Plot both plots in the same pdf file:
@@ -930,7 +931,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Nanopolish-Tombo-Nanocompore:', length_intersect_234, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Nanopolish', 'Tombo', 'Nanocompore')
-    draw_triple_venn_diagram(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234, methods_name, output_name)
+    #draw_triple_venn_diagram(n2, n3, n4, length_intersect_23, length_intersect_24, length_intersect_34, length_intersect_234, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(c(intersect_23,intersect_24,intersect_34,intersect_234))
@@ -956,7 +957,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Epinano-Nanopolish-Nanocompore:', length_intersect_124, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Epinano', 'Nanopolish', 'Nanocompore')
-    draw_triple_venn_diagram(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124, methods_name, output_name)
+    #draw_triple_venn_diagram(n1, n2, n4, length_intersect_12, length_intersect_14, length_intersect_24, length_intersect_124, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(c(intersect_12,intersect_14,intersect_24,intersect_124))
@@ -1097,6 +1098,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
       all_ranges <- data.frame()
       #Plot NanoConsensus score across transcripts:
       Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft)
+      
       write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
     }
