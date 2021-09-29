@@ -206,7 +206,7 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
     sample$Feature <- 'Nanocompore'
     
     sample <- sample[which(sample$ref_id==chr),]
-    plotting_data <- sample[,c(27, 1, 26, 28)]
+    plotting_data <- sample[,c(ncol(sample)-1, 1, ncol(sample)-2, ncol(sample))]
     colnames(plotting_data) <- c('Reference', 'Position', 'Difference', 'Feature')
     plotting_data <- subset(plotting_data, Position>=initial_position)
     plotting_data <- subset(plotting_data, Position <= final_position)

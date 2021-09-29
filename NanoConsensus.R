@@ -11,7 +11,9 @@ suppressMessages(library('stringr'))
 suppressMessages(library('scales'))
 suppressMessages(library('ggnewscale'))
 suppressMessages(library('ggrepel'))
-library('gtable')
+suppressMessages(library('gtable'))
+suppressMessages(library('xfun'))
+
 
 ##Import accessory functions:
 source('./scripts/Accessory_functions_consensusNanoMod.R')
@@ -36,7 +38,7 @@ parser$add_argument("--NC_thr", default=5, type="double",
 parser$add_argument("-exclude", "--Exclude", nargs='+', type="integer", help="Exclude these positions from the analysis (SNPs) - it will exclude the 17-mer.")
 parser$add_argument("--model_score", default="global", type="character", 
                     help="Model used to calculate NanoConsensus score [default %(default)]")
-parser$add_argument("--coverage", default=50, type="integer", 
+parser$add_argument("--coverage", default=1, type="integer", 
                     help="Minimum coverage per position to be included in the analysis [default %(default)]")
 parser$add_argument("--nanocomp_stat", default="GMM_logit_pvalue_context_2", type="character", 
                     help="Stat from Nanocompore output to be used [default %(default)]")
@@ -54,9 +56,6 @@ parser$add_argument("-Tombo", "--Tombo_Sample", nargs=1, type="character", help=
 
 #NANOCOMPORE:
 parser$add_argument("-Nanocomp", "--Nanocomp_Sample", nargs=1, type="character", help="Path to Nanocompore pairwise comparison results.")
-
-parser$add_argument("--nanocomp_metric", default="GMM_logit_pvalue_context_2", type="character", 
-                    help="Metric to use for Nanocompore analysis [default %(default)]")
 
 
 #Get command line options, if help option encountered - print help and exit:
