@@ -1,10 +1,29 @@
 ###Script which contains multiple R functions used to generate consensus putative modified positions from NanoMod results. 
 
+#Read gzipped or flat files
+read_gzipped <- function(input_file) {
+	input <- input_file
+	if (file_ext(input_file)=="gz") {
+		input = gzfile(input_file)  
+	}
+	return(input)
+}
+
+read_tab_file <- function(input_file) {
+    file_content <- read.delim(read_gzipped(input_file))		
+	return(file_content)
+}
+
+read_csv_file <- function(input_file) {
+    file_content <- read.csv(read_gzipped(input_file), stringsAsFactors = FALSE)	
+	return(file_content)
+}
+
 #Processing Epinano results:
 epinano_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   
   #Import and clean data:
-  sample <- read.csv(sample_file,stringsAsFactors = FALSE)
+  sample <- read_csv_file(sample_file)
   sample <- subset(sample, cov>Coverage)
   sample <- subset(sample, pos>=initial_position) 
   sample <- subset(sample, pos<=final_position)
@@ -13,7 +32,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   sample <- sample[,c(1,2,12,11)]
   colnames(sample) <- c('Reference', 'Position', 'Difference_sample', 'Merge')
   
-  ivt <- read.csv(ivt_file,stringsAsFactors = FALSE)
+  ivt <- read_csv_file(ivt_file)
   ivt <- subset(ivt, cov>Coverage)
   ivt <- subset(ivt, pos>=initial_position) 
   ivt <- subset(ivt, pos<=final_position)
@@ -65,7 +84,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
 
 nanopolish_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   #Import data:
-  sample <- read.delim(sample_file)
+  sample <- read_tab_file(sample_file)
   
   #Add sample information:
   sample$read_name <- 'Nanopolish'
@@ -75,7 +94,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
   
   #Import KO: 
-  raw_data_ivt <-read.delim(ivt_file)
+  raw_data_ivt <-read_tab_file(ivt_file)
   raw_data_ivt$read_name <- 'IVT'
   raw_data_ivt <- subset(raw_data_ivt, coverage>Coverage)
   colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "feature", "event_level_median_ko", 'coverage')
@@ -121,7 +140,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
 
 tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   #Import data:
-  sample <- read.delim(sample_file)
+  sample <- read_tab_file(sample_file)
 
   if (nrow(sample)>0) {
     #Apply some filters and labels:
@@ -175,7 +194,7 @@ tombo_processing <- function(sample_file, t_position, t_kmer, initial_position, 
 
 nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initial_position, final_position, MZS_thr, chr, exclude_SNP, nanocomp_stat){
   #Import data:
-  sample <- read.delim(sample_file)
+  sample <- read_tab_file(sample_file)
   if (nrow(sample)>0) {
     
     #Transform metric:
