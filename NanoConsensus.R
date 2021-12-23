@@ -34,7 +34,6 @@ parser$add_argument("--MZS_thr", default=5, type="double",
                     help="Modified Z-Score threshold for all results [default %(default)]")
 parser$add_argument("--NC_thr", default=5, type="double", 
                     help="NanoConsensus score threshold for all results [default %(default)]")
-#parser$add_argument("-autoscale", "--Autoscaling", action="store_true", help="Generate additional plots with autoscale within data from the same software.")
 parser$add_argument("-exclude", "--Exclude", nargs='+', type="integer", help="Exclude these positions from the analysis (SNPs) - it will exclude the 17-mer.")
 parser$add_argument("--model_score", default="global", type="character", 
                     help="Model used to calculate NanoConsensus score [default %(default)]")
@@ -64,7 +63,7 @@ args <- parser$parse_args()
 ##Create and update log file:
 write('NanoConsensus - v 1.0', file = paste("NanoConsensus_", args$Output_name,".log", sep=""))
 write(paste('Analysing sample: ',args$Output_name, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
-write(paste('Minimum coverage: ',args$coverage, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+ write(paste('Minimum coverage: ',args$coverage, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
 write(paste('Transcript analysed: ',args$Chr, " - from ", args$Initial_position, " to ", args$Final_position, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
 write(paste('Nanocompore stat used: ',args$nanocomp_stat, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
 write(paste('Z score threshold: ',args$MZS_thr, sep=""), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
