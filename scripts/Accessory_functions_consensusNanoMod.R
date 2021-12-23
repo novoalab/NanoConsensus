@@ -29,7 +29,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   sample <- subset(sample, pos<=final_position)
   sample$reference <- paste(sample$X.Ref, sample$pos, sep='_')
   sample$Difference <- as.numeric(sample$mis)+as.numeric(sample$ins)+as.numeric(sample$del)
-  sample <- sample[,c(1,2,12,11)]
+  sample <- sample[,c(1,2,13,12)]
   colnames(sample) <- c('Reference', 'Position', 'Difference_sample', 'Merge')
   
   ivt <- read_csv_file(ivt_file)
@@ -38,7 +38,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
   ivt <- subset(ivt, pos<=final_position)
   ivt$reference <- paste(ivt$X.Ref, ivt$pos, sep='_')
   ivt$Difference <- as.numeric(ivt$mis)+as.numeric(ivt$ins)+as.numeric(ivt$del)
-  ivt <- ivt[,c(1,2,12,11)]
+  ivt <- ivt[,c(1,2,13,12)]
   colnames(ivt) <- c('Reference', 'Position', 'Difference_IVT', 'Merge')
   
   if (nrow(sample)!=0 && nrow(ivt)!=0) {
@@ -978,6 +978,12 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(c(intersect_12,intersect_14,intersect_24,intersect_124))
+
+  } else if (n1 == 0 & n2 == 0 & n3 == 0 & n4 == 0 ) {
+    #If 0 positions have been considered as significant, exit the program:
+    print("No significant positions were found - Program will exit here.")
+    write("No significant positions were found - Program will exit here.", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
+    quit("no")
 
   } else if (n1 == 0 & n2 == 0) {
     #Overlappings: checking which software has identified less significant positions and then it uses it as query
