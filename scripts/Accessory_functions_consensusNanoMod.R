@@ -87,17 +87,16 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   sample <- read_tab_file(sample_file)
   
   #Add sample information:
-  sample$read_name <- 'Nanopolish'
+  sample$feature <- 'Nanopolish'
   sample <- subset(sample, coverage>Coverage)
-  colnames(sample)<- c("contig_wt","position","reference_kmer_wt", "feature_wt", "event_level_median_wt", 'coverage')
+  colnames(sample)<- c("contig_wt","position","reference_kmer_wt", "event_level_median_wt", "coverage", "feature_wt")
   sample<- subset(sample, contig_wt == chr)
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
   
   #Import KO: 
   raw_data_ivt <-read_tab_file(ivt_file)
-  raw_data_ivt$read_name <- 'IVT'
   raw_data_ivt <- subset(raw_data_ivt, coverage>Coverage)
-  colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "feature", "event_level_median_ko", 'coverage')
+  colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "event_level_median_ko", 'coverage')
   raw_data_ivt <- subset(raw_data_ivt, contig_ko == chr)
   raw_data_ivt$reference <- paste(raw_data_ivt$contig_ko, raw_data_ivt$position, sep='_')
   
@@ -366,7 +365,6 @@ overlapping_GRobjects <- function(GRange_object_1, GRange_object_2, length_objec
     
     intersect_object <- GRanges()
   }
-  
   
   return(intersect_object)
   
