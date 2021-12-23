@@ -922,7 +922,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Epinano-Tombo-Nanocompore:', length_intersect_134, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Epinano', 'Tombo', 'Nanocompore')
-    draw_triple_venn_diagram(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134, methods_name, output_name)
+    #draw_triple_venn_diagram(n1, n3, n4, length_intersect_13, length_intersect_14, length_intersect_34, length_intersect_134, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(c(intersect_13,intersect_14,intersect_34,intersect_134))
@@ -988,7 +988,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Tombo-Nanocompore:', length_intersect_34, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Tombo', 'Nanocompore')
-    draw_pairwise_venn_diagram(n3, n4, length_intersect_34, methods_name, output_name)
+    #draw_pairwise_venn_diagram(n3, n4, length_intersect_34, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(intersect_34)
@@ -1002,7 +1002,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Epinano-Nanopolish:', length_intersect_12, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Epinano', 'Nanopolish')
-    draw_pairwise_venn_diagram(n1, n2, length_intersect_12, methods_name, output_name)
+    #draw_pairwise_venn_diagram(n1, n2, length_intersect_12, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(intersect_12)
@@ -1016,7 +1016,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Epinano-Nanocompore:', length_intersect_14, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Epinano', 'Nanocompore')
-    draw_pairwise_venn_diagram(n1, n4, length_intersect_14, methods_name, output_name)
+    #draw_pairwise_venn_diagram(n1, n4, length_intersect_14, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(intersect_14)
@@ -1030,7 +1030,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     write(paste('-Positions identified by Nanopolish-Nanocompore:', length_intersect_24, sep = " "), file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
     methods_name <-  c('Nanopolish', 'Nanocompore')
-    draw_pairwise_venn_diagram(n2, n4, length_intersect_24, methods_name, output_name)
+    #draw_pairwise_venn_diagram(n2, n4, length_intersect_24, methods_name, output_name)
     
     #Extract kmers supported by two or more softwares: 
     supported_kmers <- reduce(intersect_24)
