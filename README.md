@@ -1,3 +1,7 @@
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5805806.svg)](https://doi.org/10.5281/zenodo.5805806)
+
 # NanoConsensus: consensus prediction of RNA modifications from direct RNA nanopore sequencing data
 
 *NanoConsensus* is an software to robustly identify putative RNA modified sites from direct RNA sequencing datasets. 
