@@ -84,7 +84,7 @@ epinano_processing <- function(sample_file, ivt_file, initial_position, final_po
 
 nanopolish_processing <- function(sample_file, ivt_file, initial_position, final_position, MZS_thr, chr, exclude_SNP, Coverage) {
   #Import data:
-  sample <- read_tab_file(sample_file)
+  sample <- read_csv_file(sample_file)
   
   #Add sample information:
   sample$feature <- 'Nanopolish'
@@ -94,7 +94,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
   
   #Import KO: 
-  raw_data_ivt <-read_tab_file(ivt_file)
+  raw_data_ivt <-read_csv_file(ivt_file)
   raw_data_ivt <- subset(raw_data_ivt, coverage>Coverage)
   colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "event_level_median_ko", 'coverage')
   raw_data_ivt <- subset(raw_data_ivt, contig_ko == chr)
@@ -243,7 +243,14 @@ nanocomp_processing <- function(sample_file, nanocomp_metric, t_nanocomp, initia
   return(list(plotting_data, significant_positions))
 }
 
-barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling, initial_pos, final_pos){
+process_bed <- function(bed_file, chr) {
+  whole_bed <- read.delim(bed_file, header=FALSE)
+  chr_bed <- subset(whole_bed, V1==chr)
+  
+  return(chr_bed)
+}
+
+barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling, initial_pos, final_pos, annotation){
   
   #Rbind all data - already in long format: 
   initial_join <- TRUE
@@ -262,21 +269,38 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   initial_df$sample_f <- factor(initial_df$Feature, levels = c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore'))
   putative_positions$sample_f <- factor(putative_positions$Feature, levels = c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore'))
   
-  #Plotting:
-  barplot_4soft <- ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=sample_f)) + ggtitle(output_name) +
-          geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
-          new_scale_color() + xlim(initial_pos, final_pos) + ylab('Z-Score ((x-median)/sd)') + xlab("") +
-          geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=4) + 
-          scale_fill_manual(values = c("#00A651", "#662D91", "#00AEEF", "#F59364")) +
-          theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
-                            axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                            legend.text=element_text(size=22), legend.position = "none") + 
-         facet_grid(sample_f ~ . , scales="fixed")
+  ##Plotting:
+  #If there are annotated positions:
+  if (nrow(annotation)!=0){
+    barplot_4soft <- ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=sample_f)) + ggtitle(output_name) +
+      geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
+      new_scale_color() + xlim(initial_pos, final_pos) + ylab('Z-Score ((x-median)/sd)') + xlab("") +
+      geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=4) + 
+      scale_fill_manual(values = c("#00A651", "#662D91", "#00AEEF", "#F59364"), breaks = c("Epinano", "Nanopolish", "Tombo", "Nanocompore")) +
+      geom_vline(xintercept=as.numeric(annotation$V3), linetype="dashed") + 
+      theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                        axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                        legend.text=element_text(size=22), legend.position = "none") + 
+      facet_grid(sample_f ~ . , scales="fixed")
+    
+  } else {
+    barplot_4soft <- ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=sample_f)) + ggtitle(output_name) +
+      geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
+      new_scale_color() + xlim(initial_pos, final_pos) + ylab('Z-Score ((x-median)/sd)') + xlab("") +
+      geom_bar(data=subset(initial_df, Modified_ZScore >= MZS_thr), stat = "identity", width=4) + 
+      scale_fill_manual(values = c("#00A651", "#662D91", "#00AEEF", "#F59364"), breaks = c("Epinano", "Nanopolish", "Tombo", "Nanocompore")) +
+      theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                        axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                        legend.text=element_text(size=22), legend.position = "none") + 
+      facet_grid(sample_f ~ . , scales="fixed")
+  }
+  
+  
 
   return(barplot_4soft)
 }
 
-Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft) {
+Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft, annotation) {
   
   #Extracting supported kmers:
   supported_positions <- c()
@@ -299,29 +323,48 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
     #Retrieve borders of supported kmers:
     limits_supp_kmers <- subset(data[,c(16,17,18)], Position %in% kmers_limits)
     
-    #Adding end of the transcript border if needed:
-    #if (nrow(limits_supp_kmers)!=length(kmers_limits)) {
-    #  
-    #}
-    
-    #Create plot object:
-    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
-           geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
-           geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
-           geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
-           ylab('NanoConsensus Score') + 
-           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
-                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22)) +
-           facet_grid(Feature ~ . , scales="fixed")
+    #If there are annotated positions: 
+    if (nrow(annotation)!=0){
+      #Create plot object:
+      nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
+             geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
+             geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
+             geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
+             ylab('NanoConsensus Score') + 
+             geom_vline(xintercept=as.numeric(annotation$V3), linetype="dashed") +
+             theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                               axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                               legend.text=element_text(size=22)) +
+             facet_grid(Feature ~ . , scales="fixed")
+    } else {
+      nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
+        geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
+        geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
+        geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
+        ylab('NanoConsensus Score') + 
+        theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                          axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                          legend.text=element_text(size=22)) +
+        facet_grid(Feature ~ . , scales="fixed")
+    }
     
   } else {
     #Create plot object if there arent any supported kmers:
-    nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
-           ylab('NanoConsensus Score') + 
-           theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
-                             axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
-                             legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
+    if (nrow(annotation)!=0){
+      nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
+             ylab('NanoConsensus Score') + 
+             geom_vline(xintercept=as.numeric(annotation$V3), linetype="dashed") +
+             theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                               axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                               legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
+    } else {
+      nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
+        ylab('NanoConsensus Score') + 
+        theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
+                          axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
+                          legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
+    }
+    
   }
   
   #Plot both plots in the same pdf file:
@@ -781,10 +824,10 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks) {
   }
   
   #Merging data per kmer: 
-  write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE)
+  write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE, quote = FALSE)
 }
 
-analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score, barplot_4soft) {
+analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score, barplot_4soft, annotation) {
   epinano <- list_significant[[1]]
   nanopolish <- list_significant[[2]]
   tombo <- list_significant[[3]]
@@ -1114,13 +1157,13 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
       kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'), FALSE)
       
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name, barplot_4soft)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name, barplot_4soft, annotation)
       write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
     } else {
       all_ranges <- data.frame()
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, annotation)
       
       write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
@@ -1130,7 +1173,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     
     all_ranges <- data.frame()
     #Plot NanoConsensus score across transcripts:
-    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft)
+    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, annotation)
     write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
   }
