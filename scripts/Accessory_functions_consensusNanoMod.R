@@ -250,7 +250,7 @@ process_bed <- function(bed_file, chr) {
   return(chr_bed)
 }
 
-barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling, initial_pos, final_pos, annotation){
+barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_thr, autoscaling, initial_pos, final_pos, annotation, ablines){
   
   #Rbind all data - already in long format: 
   initial_join <- TRUE
@@ -271,7 +271,7 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   
   ##Plotting:
   #If there are annotated positions:
-  if (nrow(annotation)!=0){
+  if (nrow(annotation)!=0 && ablines){
     barplot_4soft <- ggplot(initial_df, aes(x=Position, y=Modified_ZScore, fill=sample_f)) + ggtitle(output_name) +
       geom_bar(data=subset(initial_df, Modified_ZScore < MZS_thr), stat= "identity", width=4, fill = "#dcdcdd") +
       new_scale_color() + xlim(initial_pos, final_pos) + ylab('Z-Score ((x-median)/sd)') + xlab("") +
@@ -300,7 +300,7 @@ barplot_plotting <- function (list_plotting, list_significant, output_name, MZS_
   return(barplot_4soft)
 }
 
-Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft, annotation) {
+Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4soft, initial_pos, final_pos, annotation, ablines) {
   
   #Extracting supported kmers:
   supported_positions <- c()
@@ -324,13 +324,13 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
     limits_supp_kmers <- subset(data[,c(16,17,18)], Position %in% kmers_limits)
     
     #If there are annotated positions: 
-    if (nrow(annotation)!=0){
+    if (nrow(annotation)!=0 && ablines){
       #Create plot object:
       nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) + 
              geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
              geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
              geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
-             ylab('NanoConsensus Score') + 
+             ylab('NanoConsensus Score') +  xlim(initial_pos, final_pos) +
              geom_vline(xintercept=as.numeric(annotation$V3), linetype="dashed") +
              theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                                axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
@@ -341,7 +341,7 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
         geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
         geom_bar(data=subset(data, Position %in% supported_positions), stat= "identity", width=4, fill = "#BE1E2D") + 
         geom_label_repel(data=limits_supp_kmers,aes(label = Position, x=Position, y = Merged_Score), size = 8, label.size = 0.75) +
-        ylab('NanoConsensus Score') + 
+        ylab('NanoConsensus Score') + xlim(initial_pos, final_pos) +
         theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                           axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                           legend.text=element_text(size=22)) +
@@ -350,16 +350,16 @@ Nanoconsensus_plotting <- function(data, supported_kmers, output_name, barplot_4
     
   } else {
     #Create plot object if there arent any supported kmers:
-    if (nrow(annotation)!=0){
+    if (nrow(annotation)!=0 && ablines){
       nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
-             ylab('NanoConsensus Score') + 
+             ylab('NanoConsensus Score') + xlim(initial_pos, final_pos) +
              geom_vline(xintercept=as.numeric(annotation$V3), linetype="dashed") +
              theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                                axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                                legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
     } else {
       nanoconsensus_plot <- ggplot(data, aes(x=Position, y=Merged_Score)) +  geom_bar(stat= "identity", width=4, fill = "#dcdcdd") + ylim(0,1) +
-        ylab('NanoConsensus Score') + 
+        ylab('NanoConsensus Score') + xlim(initial_pos, final_pos) +
         theme_bw() +theme(plot.title = element_text(face = "bold", hjust = 0.5), text = element_text(size=25),
                           axis.text = element_text(size = 25), strip.text.y = element_text(size = 25),
                           legend.text=element_text(size=22)) + facet_grid(Feature ~ . , scales="fixed")
@@ -720,9 +720,7 @@ extracting_modified_ZScores <- function (GRange_supported_kmers, list_plotting, 
       data[,i] <- rescale(unlist(data[i]), to=c(0,1), na.rm=TRUE)
     
     }
-    
-    #data[is.na(data)] <- 0
-    
+
     #Rescale outputs 0.5 when the software gives the same MZS for all positions - correcting for it if needed:
     if (length(unique(data$positions_df.Epinano_Score)) == 1 || all(is.na(unique(data$positions_df.Epinano_Score)))) {
       data$positions_df.Epinano_Score <- 0 
@@ -811,23 +809,81 @@ bed_tracks <- function (data, output_name, color, methods) {
   }
 }
 
-kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks) {
+nearest_distance_mod <- function(all_ranges, annotation) {
+  distance <- c()
+  mods <- c()
+  
+  #Loop through all the supported kmers:
+  for (i in 1:nrow(all_ranges)){
+    
+    #Define variables to determine distance to nearest modified site:
+    initial <- all_ranges[i,2]
+    final <- all_ranges[i,3]
+    single_distance <- c()
+    single_mods <- c()
+    within <- FALSE
+    
+    #Loop through all the annotated positions:
+    for (j in 1:nrow(annotation)){
+      annotated_position <- annotation[j,3]
+      
+      #Annotated position within the modified kmer:
+      if (annotated_position<=final && annotated_position>=initial && within==TRUE){
+        single_distance <- c(single_distance, 0)
+        single_mods <- c(single_mods, paste(annotation[j,4],annotation[j,3], sep="-"))
+        
+      } else if (annotated_position<=final && annotated_position>=initial) {
+        single_distance <- 0
+        single_mods <- paste(annotation[j,4],annotation[j,3], sep="-")
+        within <- TRUE
+        
+      } else {
+        #Annotated position outside the modified kmer:
+        d <- min(abs(annotated_position-initial), abs(annotated_position-final))
+        if (d<single_distance || length(single_distance)==0){
+          single_distance <- d
+          single_mods <- paste(annotation[j,4],annotation[j,3], sep="-")
+          
+        } else if (d==single_distance) {
+          single_mods <- c(single_mods, paste(annotation[j,4],annotation[j,3], sep="-"))
+        }
+      }
+      
+    }
+    distance <- c(distance, unique(single_distance))
+    mods <- c(mods, str_c(single_mods, collapse = ","))
+    
+  }
+  #Adding the data to the final results:
+  all_ranges$Distance_nearest_mods <- distance
+  all_ranges$Nearest_mods <- mods
+  
+  return(all_ranges)
+}
+
+kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks, annotation, sup_kmers) {
   print('Kmer analysis')
   kmer_data <- extract_kmers(all_ranges, fasta_file)
   all_ranges$Kmer <- kmer_data[[1]]
   all_ranges$RRACH_motif <- kmer_data[[2]]
   all_ranges <- all_ranges[order(all_ranges$Start, decreasing = FALSE),]
-   
+  
+  #If needed, generate track headed:
   if (tracks){
     color_beds <- c("0,166,81", "102,45,145", "0,174,239","242,101,34","190,30,45")
     bedgraph_tracks(all_ranges[,c(1,2,3,8,9,10,11,16)], output_name, color_beds, c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore', 'NanoConsensus'))
+  }
+  
+  #If annotation file is provided, calculate distance to the nearest + annotated site: 
+  if (sup_kmers){
+    all_ranges <- nearest_distance_mod(all_ranges, annotation)
   }
   
   #Merging data per kmer: 
   write.table(all_ranges, file = output_name, sep = '\t', row.names = FALSE, quote = FALSE)
 }
 
-analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score, barplot_4soft, annotation) {
+analysis_significant_positions <- function (list_significant, list_plotting, fasta_file, output_name, initial_position, final_position, MZS_thr, Consensus_score, model_score, barplot_4soft, annotation, ablines) {
   epinano <- list_significant[[1]]
   nanopolish <- list_significant[[2]]
   tombo <- list_significant[[3]]
@@ -1146,7 +1202,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
   #Analysis of all kmers across the chromosome:
   all_kmers_raw <- GRanges(seqnames = chr, ranges = IRanges(initial_position:(final_position-4), end = (initial_position+4):final_position))
   all_kmers <- extracting_modified_ZScores(all_kmers_raw, list_plotting, MZS_thr, FALSE, Consensus_score, model_score)
-  kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'), TRUE)
+  kmer_analysis(all_kmers[[1]], fasta_file, paste(output_name,'Raw_kmers.txt', sep='_'), TRUE, annotation, FALSE)
   
   #Analyse the supported kmers - only if they are present:
   if (is.null(supported_kmers)==FALSE) {
@@ -1154,16 +1210,16 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     
     if(extract_length_from_GRobjects(filtered_supported_kmers)!=0){
       all_ranges <- extracting_modified_ZScores(filtered_supported_kmers, list_plotting, MZS_thr, TRUE, Consensus_score, model_score)
-      kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'), FALSE)
+      kmer_analysis(all_ranges[[1]], fasta_file, paste(output_name,'Supported_kmers.txt', sep='_'), FALSE, annotation, TRUE)
       
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name, barplot_4soft, annotation)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges[[1]], output_name, barplot_4soft, initial_position, final_position, annotation, ablines)
       write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
     } else {
       all_ranges <- data.frame()
       #Plot NanoConsensus score across transcripts:
-      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, annotation)
+      Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, initial_position, final_position, annotation, ablines)
       
       write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
       
@@ -1173,7 +1229,7 @@ analysis_significant_positions <- function (list_significant, list_plotting, fas
     
     all_ranges <- data.frame()
     #Plot NanoConsensus score across transcripts:
-    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, annotation)
+    Nanoconsensus_plotting(all_kmers[[1]], all_ranges, output_name, barplot_4soft, initial_position, final_position, annotation, ablines)
     write("Step 5: Plotting NanoConsensus scores across the transcript", file = paste("NanoConsensus_", args$Output_name,".log", sep=""), append = T)
     
   }
