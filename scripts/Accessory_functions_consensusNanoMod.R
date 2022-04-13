@@ -94,7 +94,7 @@ nanopolish_processing <- function(sample_file, ivt_file, initial_position, final
   sample$reference <- paste(sample$contig_wt, sample$position, sep='_')
   
   #Import KO: 
-  raw_data_ivt <-read_csv_file(ivt_file)
+  raw_data_ivt <- read_csv_file(ivt_file)
   raw_data_ivt <- subset(raw_data_ivt, coverage>Coverage)
   colnames(raw_data_ivt)<- c("contig_ko","position","reference_kmer_ko", "event_level_median_ko", 'coverage')
   raw_data_ivt <- subset(raw_data_ivt, contig_ko == chr)
@@ -874,8 +874,8 @@ kmer_analysis <- function (all_ranges, fasta_file, output_name, tracks, annotati
     bedgraph_tracks(all_ranges[,c(1,2,3,8,9,10,11,16)], output_name, color_beds, c('Epinano', 'Nanopolish', 'Tombo', 'Nanocompore', 'NanoConsensus'))
   }
   
-  #If annotation file is provided, calculate distance to the nearest + annotated site: 
-  if (sup_kmers){
+  #If annotation file is provided, calculate distance to the nearest + annotated site:
+  if (sup_kmers && length(annotation)!=0){
     all_ranges <- nearest_distance_mod(all_ranges, annotation)
   }
   

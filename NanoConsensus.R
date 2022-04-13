@@ -92,6 +92,8 @@ list_significant <- list(epinano_data[[2]], nanopolish_data[[2]], tombo_data[[2]
 #If there is annotation, process it:
 if (length(args$bed)!=0){
   annotation <- process_bed(args$bed, args$Chr)
+} else {
+  annotation <- c()
 }
 
 #Create Z-Scores plotting object:
