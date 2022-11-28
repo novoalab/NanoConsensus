@@ -156,6 +156,24 @@ Additionally, it also creates two directories:
 * **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/Kmer_tracks))
 ![Kmer_tracks](/img/Kmers_tracks.png)
 
+## Analysis of Nano3P-seq datasets:
+### Basecalling and trimming:
+
+### Mapping to rRNA reference: 
+
+### Mapping to the transcriptome: 
+* Generate the transcriptome reference from genome (.fa) and annotation (.gtf) files:
+```
+MISSING: To fill code to generate only genes gtf. 
+bedtools getfasta -fi Ecoli_BW25113_NCBI.fa -bed Ecoli_BW25113_NCBI.OnlyGenes.gtf -s -name > Ecoli_BW25113_NCBI.Transcriptome.fa
+```
+
+* Mapping and counting with salmon:
+```
+minimap2 -ax map-ont Ecoli_BW25113_NCBI.Transcriptome.fa WT_1h_Rep1.fq.gz | samtools view -F 4 -Sb > WT_1h_Rep1.transcriptome.bam
+salmon quant --ont -t /no_backup_isis/enovoa/reference_fasta/bacterial_references/Ecoli_BW25113_NCBI.Transcriptome.fa -l U -a WT_1h_Rep1.transcriptome.bam -o WT_1h_Rep1
+```
+
 ## Citation
 
 A pre-print is currently under preparation.
