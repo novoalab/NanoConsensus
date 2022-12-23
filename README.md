@@ -208,14 +208,14 @@ bash ./scripts/extract_FL_read_IDs.sh Ecoli.sorted.bam.bed 23S 50 2894 Ecoli
   bash ./scripts/extract_FL_BC-fast5_fastq_bam_ONESAMPLE.sh Ecoli_Untreated_1h Ecoli_Untreated_1h_FullLength Ecoli_Untreated_1h.16S.read_IDs.txt 
   ```
 
-* Running RNA modification detection softwares: 
+### Running RNA modification detection softwares: 
 
 EpiNano, Nanopolish, Tombo and Nanocompore were run by the module mop_mod from MoP2 (REF) with the default options. 
 ```
 nextflow run mop_mod.nf -with-singularity -bg > log.txt
 ```
 
-* Running NanoConsensus:
+### Running NanoConsensus:
 
 NanoConsensus was run by the module mop_consensus from MoP2 with the options `--MZS 3.75` and `--NC 4`.
 ```
