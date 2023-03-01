@@ -223,6 +223,7 @@ nextflow run mop_consensus.nf -with-singularity -bg > log.txt
 ```
 
 ## Analysis of Nano3P-seq datasets:
+
 ### Basecalling and trimming:
 
 ### Mapping to rRNA reference: 
@@ -242,7 +243,8 @@ salmon quant --ont -t /no_backup_isis/enovoa/reference_fasta/bacterial_reference
 
 ## Citation
 
-A pre-print is currently under preparation.
+If you find this work useful please cite: 
+Delgado-Tejedor A, Medina R, Begik O, Cozzuto L, Ponomarenko J and Novoa EM. Native RNA nanopore reveals antibiotic-induced loss of rRNA modifications located in the A and P sites. bioRxiv 2023. 
 
 ## Contact 
 
