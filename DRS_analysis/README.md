@@ -1,4 +1,4 @@
-## Analysis of the DRS datasets:
+## Analysis of the DRS datasets
 ### Basecalling and demultiplexing:
 The module [mop_preprocess](https://biocorecrg.github.io/master_of_pores/nanopreprocess.html) module from [Master of Pores2](https://github.com/biocorecrg/MOP2) pipeline was used to perform basecalling, with guppy (version 3.1.5, model rna_r9.4.1_70bps_hac), and demultiplexing - when needed - with Deeplexicon (version 1.2.0). Then, it also mapped the basecalled reads to the suitable rRNA transcriptome (for E.coli: `ref/Escherichia_coli.rRNA.fa` and for S.cerevisiae: `ref/Saccharomyces_cerevisiae.rRNA.fa`) with graphmap (version 0.5.2) with unspliced parameters (-v1 -K fastq). To execute this module, please add these parameters into both `params.config` and `tools_opt.tsv` files and run the command below: 
 
