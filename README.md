@@ -11,9 +11,9 @@
 - [Installation](#Installation)
 - [Running the code](#Running-the-code)
 - [Expected output](#Expected-output)
+- [Required dependencies](#Required-dependencies)
 - [Citation](#Citation) 
 - [Contact](#Contact) 
-
 
 ## General Description
 
@@ -155,6 +155,11 @@ Additionally, it also creates two directories:
 
 * **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/Kmer_tracks))
 ![Kmer_tracks](/img/Kmers_tracks.png)
+
+## Required dependencies
+* R (version 4.1.1)
+* The following R packages: GenomicRanges, plyr, dplyr, VennDiagram, ggplot2, argparse, stringr, scales, ggnewscale, ggrepel, gtable
+* bedtools (version 2.29.2)
 
 ## Citation
 
