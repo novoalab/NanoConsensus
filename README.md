@@ -164,9 +164,10 @@ Additionally, it also creates two directories:
 ## Citation
 
 If you find this work useful please cite: 
+
 Delgado-Tejedor A, Medina R, Begik O, Cozzuto L, Ponomarenko J and Novoa EM. [Native RNA nanopore reveals antibiotic-induced loss of rRNA modifications located in the A and P sites](https://www.nature.com/articles/s41467-024-54368-x) **Nature Communications** 2024. 
 
 ## Contact 
 
-Please open an issue in the GitHub repo if you have any questions/doubts/suggestions about how to use this software. Thanks!
+Please open an [issue](https://github.com/novoalab/NanoConsensus/issues) in the GitHub repo if you have any questions/doubts/suggestions. Thanks!
 
