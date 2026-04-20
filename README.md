@@ -164,7 +164,7 @@ Additionally, it also creates two directories:
 ## Citation
 
 If you find this work useful please cite: 
-Delgado-Tejedor A, Medina R, Begik O, Cozzuto L, Ponomarenko J and Novoa EM. Native RNA nanopore reveals antibiotic-induced loss of rRNA modifications located in the A and P sites. bioRxiv 2023. 
+Delgado-Tejedor A, Medina R, Begik O, Cozzuto L, Ponomarenko J and Novoa EM. [Native RNA nanopore reveals antibiotic-induced loss of rRNA modifications located in the A and P sites](https://www.nature.com/articles/s41467-024-54368-x). **Nature Communications** 2024. 
 
 ## Contact 
 
