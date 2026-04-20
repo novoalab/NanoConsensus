@@ -1,6 +1,6 @@
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5805806.svg)](https://doi.org/10.5281/zenodo.5805806)
+[![DOI]([https://zenodo.org/badge/DOI/10.5281/zenodo.5805806.svg)](https://doi.org/10.5281/zenodo.5805806](https://doi.org/10.1038/s41467-025-55846-6))
 
 # NanoConsensus: consensus prediction of RNA modifications from direct RNA nanopore sequencing data
 
