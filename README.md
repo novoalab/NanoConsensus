@@ -258,8 +258,6 @@ Additionally, it also creates two directories:
 * The following R packages: GenomicRanges, plyr, dplyr, VennDiagram, ggplot2, argparse, stringr, scales, ggnewscale, ggrepel, gtable, xfun
 * bedtools (version 2.29.2)
 
-These dependencies are the same for both versions. Additionally, Version 2.0 (RNA004) requires the upstream tools that generate the baseQ and nanoRMS pairwise comparison files.
-
 ## Citation
 
 If you find this work useful please cite: 
