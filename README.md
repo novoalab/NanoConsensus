@@ -27,7 +27,7 @@ Both versions follow the same consensus strategy (see [General Description](#Gen
 
 NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs KO) using several RNA modification detection softwares/features at per-transcript level. Then, it combines all results generated to produce a consensus prediction, which is more robust than those from individual softwares.
 
-* In **Version 2.0** (RNA004), the predictions from these softwares are combined: [Epinano](https://github.com/enovoa/EpiNano), baseQ, and three nanoRMS features - signal intensity (SI), standard deviation (SD) and dwell time (DT). These changes were implemented since Nanopolish, Tombo and Nanocompore do not support RNA004 chemistry.
+* In **Version 2.0** (RNA004), the predictions from these softwares are combined: [Epinano](https://github.com/enovoa/EpiNano), baseQ, and three nanoRMS features - signal intensity (SI), standard deviation (SD) and dwell time (DT). These changes were implemented since Nanopolish and Tombo do not support RNA004 chemistry. As of October 2026, Nanocompore supports RNA004, but hasn’t been yet incorporated into NanoConsensus. 
 
 * In **Version 1.0** (RNA002), the predictions from these softwares are combined: [Epinano](https://github.com/enovoa/EpiNano), [Nanopolish](https://github.com/jts/nanopolish), [Tombo](https://github.com/nanoporetech/tombo) and [Nanocompore](https://github.com/tleonardi/nanocompore).
 
@@ -35,7 +35,7 @@ NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs K
 
 
 *NanoConsensus* performs the following steps: 
-* **1. Running RNA modification detection softwares.** The first step of *NanoConsensus* runs the RNA modification detection algorithms for the corresponding chemistry/version (see above) in a pairwise manner (i.e. comparing a WT/control/condition1 against an IVT/Knockout/Condition2 sample). This step is implemented in the form of a Nextflow pipeline, and has been embedded in [Master of Pores](https://github.com/biocorecrg/master_of_pores), in the form of an updated [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module. These algorithms/features produce scores (p-values, differential error, differential current intensity, base quality or signal-derived statistics, depending on the software/feature) at per-transcript level for each individual position. 
+* **1. Running RNA modification detection softwares.** The first step of *NanoConsensus* runs the RNA modification detection algorithms for the corresponding chemistry/version (see above) in a pairwise manner (i.e. comparing a WT/control/condition1 against an IVT/Knockout/Condition2 sample). This step is implemented in the form of a Nextflow pipeline, and has been embedded in [Master of Pores](https://github.com/biocorecrg/master_of_pores), in the form of an updated [mop_mod](https://github.com/biocorecrg/master_of_pores/tree/MOP3/mop_mod) module. These algorithms/features produce scores (p-values, differential error, differential current intensity, base quality or signal-derived statistics, depending on the software/feature) at per-transcript level for each individual position. 
 
 * **2. Per-transcript Z-Score normalization.** *NanoConsensus* then performs Z-Score normalization for each dataset and software/feature, in a per-transcript manner. Z-scores are then used to select candidate RNA modified positions for each independent software/feature, which must be higher than the provided user-defined threshold (default value = 5). 
 
@@ -43,7 +43,7 @@ NanoConsensus performs pairwise comparisons between two conditions (e.g. WT vs K
 
 * **4. Re-scaling of Z-scores.** Z-score values are affected by coverage of the transcript. Thus, to have final merged results that are comparable across transcripts, *NanoConsensus* will rescaled Z-score values between 0 and 1. Then, it calculates the *NanoConsensus score*, which is equal to the median of the rescaled Z-scores across all softwares/features. This is performed at all positions across the determined transript. 
 
-* **5. Filtering of putative modified sites.** *NanoConsensus scores* from all previously identified putative modified sites are retrieved and compared to a specific threshold. This threshold is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. Those putative modified sites whose *NanoConsensus scores* are above the threshold are then reported whilst all unverified results are discarded.
+* **5. Filtering of putative modified sites.** *NanoConsensus scores* from all previously identified putative modified sites are retrieved and compared to a specific threshold. This threshold is determined by the median of the *Nanoconsensus scores* across the entire transcript multiplied by an integer, with 5 as the default value. Those putative modified sites whose *NanoConsensus scores* are above the threshold are then reported as modified sites whereas the rest are discarded.
 
 ## Installation 
 If needed, install *Master of Pores* from its github repository:
@@ -75,29 +75,74 @@ All are run in a pairwise manner (e.g. WT vs IVT) and combined into the same con
 <a name="running-the-code-v2"></a>
 ### Running the code
 
-Firstly, user should basecall and map direct RNA sequencing datasets using the [NanoPreprocess](https://biocorecrg.github.io/master_of_pores/nanopreprocess.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. To run this module, please fill in `params.config` file with the required information and then, use the command below. If more information is needed, please click [here](https://biocorecrg.github.io/master_of_pores/nanopreprocess.html). 
+Firstly, user should basecall and map direct RNA sequencing datasets using the [mop_preprocess](https://biocorecrg.github.io/master_of_pores/MOP4_1/mop_preprocess.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. To run this module, please fill in `params.config` file with the required information and then, use the command below.
 ```
-nextflow run nanopreprocess.nf -with-singularity -bg > log.txt
+nextflow run mop_preprocess.nf -with-singularity -bg > log.txt
 ```
 
-The following step is to run the different RNA modification detection algorithms in a pairwise manner with [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. Fill in both `params.config` and `comparison.tsv` file and then use the command below. If more information is needed, please click [here](https://biocorecrg.github.io/master_of_pores/nanomod.html).
+The following step is to run the different RNA modification detection algorithms in a pairwise manner with [mop_mod](https://github.com/biocorecrg/master_of_pores/tree/MOP3/mop_mod) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. Fill in both `params.config` and `comparison.tsv` file and then use the command below.
 
 ```
-nextflow run nanomod.nf -with-singularity -bg > log.txt
+nextflow run mop_mod.nf -with-singularity -bg > log.txt
 ```
 
 To perform the NanoConsensus analysis, the user must provide the **following inputs**:
-* Reference file (*.fa)
-* Transcript name - should match a fasta ID in the reference file - i.e: *18S*
+* Reference file (*.fa) ([Check full input](example_input/Reference.fa))
+* Transcript name - should match a fasta ID in the reference file - i.e: *16S*
 * Start position - must be an integer - i.e: *50*
 * End position - must be an integer - i.e: *1492*
 
-These per-software/feature pairwise comparison inputs are also required for the analysis:
-* **Epinano output**: both for WT and IVT samples, in the same format as [Version 1.0](#running-the-code-v1) below.
-* **baseQ output**: a tab-delimited, bedmethyl-style pairwise comparison file with per-position coverage and a pairwise comparison statistic (e.g. KS-statistic) between WT and IVT.
-* **nanoRMS SI output**: same bedmethyl-style format as baseQ, computed on the signal intensity (SI) feature.
-* **nanoRMS DT output**: same bedmethyl-style format as baseQ, computed on the dwell time (DT) feature.
-* **nanoRMS SD output**: same bedmethyl-style format as baseQ, computed on the standard deviation (SD) feature.
+These per-software/feature pairwise comparison inputs - generated by *mop_mod* - are also required for the analysis (plain or gzipped files are accepted):
+* **Epinano output**: both for WT and IVT/KO samples ([Check full input](example_input/RNA004/epinano_flow/WT_Rep1.plus_strand.per.site.csv.gz))
+```
+#Ref,pos,strand,base,cov,q_mean,q_median,q_std,mat,mis,ins,del
+16S,50,+,A,5589,21.32242,23.00000,4.99957,0.96368,0.02058,0.00054,0.01521
+16S,51,+,C,5589,22.10646,23.00000,4.63758,0.97799,0.00394,0.00089,0.01753
+16S,52,+,A,5589,21.51727,23.00000,4.53987,0.97942,0.00608,0.00107,0.01396
+16S,53,+,C,5593,21.85214,23.00000,4.43021,0.97801,0.00125,0.00036,0.02020
+16S,54,+,A,5598,21.32851,23.00000,4.56952,0.97428,0.00286,0.00018,0.02233
+16S,55,+,T,5599,21.18378,23.00000,5.44888,0.96999,0.00411,0.00036,0.02536
+```
+
+* **baseQ output**: a tab-delimited, bedmethyl-style pairwise comparison file without header. Columns are: chromosome, start, end, feature name, pairwise comparison statistic (e.g. KS-statistic) between WT and IVT/KO, strand, thickStart, thickEnd, itemRgb, coverage and p-value ([Check full input](example_input/RNA004/baseQ_flow/WT_Rep1-vs-KO_Rep1_baseQ.bed.gz))
+```
+16S	50	51	Q	0.144	+	50	51	255,218,218	5557	3.900906575263463e-61
+16S	51	52	Q	0.137	+	51	52	255,220,220	5557	1.4574930220159997e-55
+16S	52	53	Q	0.145	+	52	53	255,218,218	5557	1.6308751085665161e-62
+16S	53	54	Q	0.115	+	53	54	255,226,226	5562	2.889419857065405e-39
+16S	54	55	Q	0.117	+	54	55	255,225,225	5567	1.1569101110393207e-40
+16S	55	56	Q	0.118	+	55	56	255,225,225	5568	4.171181314484573e-41
+```
+
+* **nanoRMS SI output**: same bedmethyl-style format as baseQ, computed on the signal intensity (SI) feature ([Check full input](example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.si.bed.gz))
+```
+16S	50	51	si	-0.119	+	50	51	225,225,255	2522	2.7188729590013283e-17
+16S	51	52	si	-0.103	+	51	52	229,229,255	2525	5.268509559627107e-13
+16S	53	54	si	-0.053	+	53	54	241,241,255	2531	0.0008417068325846425
+16S	54	55	si	-0.087	+	54	55	233,233,255	2532	2.4315492221383535e-09
+16S	55	56	si	0.162	+	55	56	255,214,214	2532	1.4320594812655883e-31
+16S	57	58	si	0.241	+	57	58	255,194,194	2534	8.45131310495794e-70
+```
+
+* **nanoRMS DT output**: same bedmethyl-style format as baseQ, computed on the dwell time (DT) feature ([Check full input](example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.dt.bed.gz))
+```
+16S	50	51	dt	0.132	+	50	51	255,221,221	2522	6.1004639151873e-21
+16S	51	52	dt	0.072	+	51	52	255,237,237	2525	1.3673021581055914e-06
+16S	52	53	dt	-0.072	+	52	53	237,237,255	2528	1.7727825914403128e-06
+16S	54	55	dt	0.078	+	54	55	255,235,235	2532	1.493607011641038e-07
+16S	55	56	dt	0.145	+	55	56	255,218,218	2532	3.0724576776528683e-25
+16S	57	58	dt	-0.058	+	57	58	240,240,255	2534	0.00017874223638080693
+```
+
+* **nanoRMS SD output**: same bedmethyl-style format as baseQ, computed on the standard deviation (SD) feature ([Check full input](example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.sd.bed.gz))
+```
+16S	52	53	sd	-0.111	+	52	53	227,227,255	2528	4.4505827692956846e-15
+16S	53	54	sd	-0.117	+	53	54	225,225,255	2531	1.5461744128276795e-16
+16S	54	55	sd	-0.108	+	54	55	228,228,255	2532	3.728164689255355e-14
+16S	55	56	sd	-0.063	+	55	56	239,239,255	2532	3.806196685445267e-05
+16S	56	57	sd	0.122	+	56	57	255,224,224	2533	4.994768922972126e-18
+16S	57	58	sd	0.109	+	57	58	255,227,227	2534	1.4889408983239532e-14
+```
 
 Any of the five inputs can be omitted (e.g. if a given software/feature was not run) and *NanoConsensus* will simply exclude it from the consensus.
 
@@ -105,31 +150,31 @@ Any of the five inputs can be omitted (e.g. if a given software/feature was not 
 
 * Default command:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./epinano_WT.tsv.per.site.var.csv -Epi_IVT ./epinano_IVT.tsv.per.site.var.csv -BaseQ ./baseQ_WT_IVT.tsv -nanoRMS_SI ./nanoRMS_SI_WT_IVT.tsv -nanoRMS_DT ./nanoRMS_DT_WT_IVT.tsv -nanoRMS_SD ./nanoRMS_SD_WT_IVT.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./Reference.fa -chr 18S
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA004/epinano_flow/WT_Rep1.plus_strand.per.site.csv.gz -Epi_IVT ./example_input/RNA004/epinano_flow/KO_Rep1.plus_strand.per.site.csv.gz -BaseQ ./example_input/RNA004/baseQ_flow/WT_Rep1-vs-KO_Rep1_baseQ.bed.gz -nanoRMS_SI ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.si.bed.gz -nanoRMS_DT ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.dt.bed.gz -nanoRMS_SD ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.sd.bed.gz -ini_pos 50 -fin_pos 1492 -output WT_Rep1---vs---KO_Rep1 -fasta ./example_input/Reference.fa -chr 16S
 ```
 
 * Use the following command to change the Z-Score threshold (default = *5*) to identify putative modified sites from individual software/feature data:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./epinano_WT.tsv.per.site.var.csv -Epi_IVT ./epinano_IVT.tsv.per.site.var.csv -BaseQ ./baseQ_WT_IVT.tsv -nanoRMS_SI ./nanoRMS_SI_WT_IVT.tsv -nanoRMS_DT ./nanoRMS_DT_WT_IVT.tsv -nanoRMS_SD ./nanoRMS_SD_WT_IVT.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./Reference.fa -chr 18S --MZS_thr 4
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA004/epinano_flow/WT_Rep1.plus_strand.per.site.csv.gz -Epi_IVT ./example_input/RNA004/epinano_flow/KO_Rep1.plus_strand.per.site.csv.gz -BaseQ ./example_input/RNA004/baseQ_flow/WT_Rep1-vs-KO_Rep1_baseQ.bed.gz -nanoRMS_SI ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.si.bed.gz -nanoRMS_DT ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.dt.bed.gz -nanoRMS_SD ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.sd.bed.gz -ini_pos 50 -fin_pos 1492 -output WT_Rep1---vs---KO_Rep1 -fasta ./example_input/Reference.fa -chr 16S --MZS_thr 4
 ```
 
 * Use the following command to change the NanoConsensus score threshold (default = median(NanoConsensus_Score) * *5*) to filter the final putative modified sites:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./epinano_WT.tsv.per.site.var.csv -Epi_IVT ./epinano_IVT.tsv.per.site.var.csv -BaseQ ./baseQ_WT_IVT.tsv -nanoRMS_SI ./nanoRMS_SI_WT_IVT.tsv -nanoRMS_DT ./nanoRMS_DT_WT_IVT.tsv -nanoRMS_SD ./nanoRMS_SD_WT_IVT.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./Reference.fa -chr 18S --NC_thr 3
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA004/epinano_flow/WT_Rep1.plus_strand.per.site.csv.gz -Epi_IVT ./example_input/RNA004/epinano_flow/KO_Rep1.plus_strand.per.site.csv.gz -BaseQ ./example_input/RNA004/baseQ_flow/WT_Rep1-vs-KO_Rep1_baseQ.bed.gz -nanoRMS_SI ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.si.bed.gz -nanoRMS_DT ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.dt.bed.gz -nanoRMS_SD ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.sd.bed.gz -ini_pos 50 -fin_pos 1492 -output WT_Rep1---vs---KO_Rep1 -fasta ./example_input/Reference.fa -chr 16S --NC_thr 3
 ```
 
-* Use the following command to also generate the extended outputs (`Raw_kmers.txt` and per-software `Kmer_tracks`, see below), and to fill in the bedRmod header metadata of the output files:
+* Use the following command to also generate the extended outputs (`Raw_kmers.txt` and per-software `Kmer_tracks`, see below), and to fill in the [bedRmod](https://dieterich-lab.github.io/scimodom/bedrmod.html) header metadata of the output files:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./epinano_WT.tsv.per.site.var.csv -Epi_IVT ./epinano_IVT.tsv.per.site.var.csv -BaseQ ./baseQ_WT_IVT.tsv -nanoRMS_SI ./nanoRMS_SI_WT_IVT.tsv -nanoRMS_DT ./nanoRMS_DT_WT_IVT.tsv -nanoRMS_SD ./nanoRMS_SD_WT_IVT.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./Reference.fa -chr 18S --extended_outputs --organism "Homo sapiens" --assembly GRCh38 --basecalling "Dorado v0.7.2" --bioinformatics_workflow NanoConsensus_v2.0 --experiment "WT vs IVT"
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA004/epinano_flow/WT_Rep1.plus_strand.per.site.csv.gz -Epi_IVT ./example_input/RNA004/epinano_flow/KO_Rep1.plus_strand.per.site.csv.gz -BaseQ ./example_input/RNA004/baseQ_flow/WT_Rep1-vs-KO_Rep1_baseQ.bed.gz -nanoRMS_SI ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.si.bed.gz -nanoRMS_DT ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.dt.bed.gz -nanoRMS_SD ./example_input/RNA004/nanoRMS_flow/WT_Rep1-vs-KO_Rep1.sd.bed.gz -ini_pos 50 -fin_pos 1492 -output WT_Rep1---vs---KO_Rep1 -fasta ./example_input/Reference.fa -chr 16S --extended_outputs --organism "Homo sapiens" --assembly GRCh38 --basecalling "Dorado v0.7.2" --bioinformatics_workflow NanoConsensus_v2.0 --experiment "WT vs IVT"
 ```
 
 <a name="expected-output-v2"></a>
 ### Expected output
 
 By default, *NanoConsensus* v2.0 generates:
-* **Supported_kmers.bedrmod** file: bedRmod-formatted file (i.e. it includes the standard bedRmod header, filled in from the `--organism`/`--assembly`/`--basecalling`/etc. arguments) containing only those regions supported by two or more softwares/features and whose NanoConsensus score is higher than the specified threshold.
-* **NanoConsensus_Scores** pdf file: it contains tracks with both Z-Scores for all softwares/features and NanoConsensus scores across the transcript. Coloured, positions supported by each one of the softwares/features.
-* **BedRmod_tracks** directory: one bedRmod track per software/feature (Epinano, baseQ, nanoRMS_SI, nanoRMS_DT, nanoRMS_SD and NanoConsensus). Each contains the score per-position from one specific software/feature. These tracks help visualizing scores across the transcript.
+* **Supported_kmers.bedrmod** file: [bedRmod](https://dieterich-lab.github.io/scimodom/bedrmod.html)-formatted file (i.e. it includes the standard bedRmod header, filled in from the `--organism`/`--assembly`/`--basecalling`/etc. arguments) containing only those regions supported by two or more softwares/features and whose NanoConsensus score is higher than the specified threshold. ([Check full output](example_output/RNA004/WT_Rep1---vs---KO_Rep1_supported_kmers.bedrmod))
+* **NanoConsensus_Scores** pdf file: it contains tracks with both Z-Scores for all softwares/features and NanoConsensus scores across the transcript. Coloured, positions supported by each one of the softwares/features. ([Check output](example_output/RNA004/plots))
+* **BedRmod_tracks** directory: one bedRmod track per software/feature (Epinano, baseQ, nanoRMS_SI, nanoRMS_DT, nanoRMS_SD and NanoConsensus). Each contains the score per-position from one specific software/feature. These tracks help visualizing scores across the transcript. ([Check output](example_output/RNA004/bedrmods_tracks))
 
 When run with `--extended_outputs`, *NanoConsensus* additionally generates:
 * **Raw_kmers.txt** file: it contains results for all positions across the transcript - ZScores for all softwares/features, NanoConsensus score, kmer sequence and if the kmer contains the RRACH motif.
@@ -141,25 +186,25 @@ This version combines [Epinano](https://github.com/enovoa/EpiNano), [Nanopolish]
 
 <a name="running-the-code-v1"></a>
 ### Running the code 
-Firstly, user should basecall and map direct RNA sequencing datasets using the [NanoPreprocess](https://biocorecrg.github.io/master_of_pores/nanopreprocess.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. To run this module, please fill in `params.config` file with the required information and then, use the command below. If more information is needed, please click [here](https://biocorecrg.github.io/master_of_pores/nanopreprocess.html). 
+Firstly, user should basecall and map direct RNA sequencing datasets using the [mop_preprocess](https://biocorecrg.github.io/master_of_pores/MOP4_1/mop_preprocess.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. To run this module, please fill in `params.config` file with the required information and then, use the command below. 
 ```
-nextflow run nanopreprocess.nf -with-singularity -bg > log.txt
-```
-
-The following step is to run the four different RNA modification detection algorithms (EpiNano(v1.1), Tombo(v1.5), Nanopolish(v0.11.1) and Nanocompore(v1.0.0)) in a pairwise manner with [NanoMod](https://biocorecrg.github.io/master_of_pores/nanomod.html) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. Fill in both `params.config` and `comparison.tsv` file and then use the command below. If more information is needed, please click [here](https://biocorecrg.github.io/master_of_pores/nanomod.html).
-
-```
-nextflow run nanomod.nf -with-singularity -bg > log.txt
+nextflow run mop_preprocess.nf -with-singularity -bg > log.txt
 ```
 
-Finally, to perform NanoConsensus analysis, together with the files generated by *NanoMod*, the user must provide the **following inputs**:
+The following step is to run the four different RNA modification detection algorithms (EpiNano(v1.1), Tombo(v1.5), Nanopolish(v0.11.1) and Nanocompore(v1.0.0)) in a pairwise manner with [mop_mod](https://github.com/biocorecrg/master_of_pores/tree/MOP3/mop_mod) module from [Master of Pores](https://github.com/biocorecrg/master_of_pores) pipeline. Fill in both `params.config` and `comparison.tsv` file and then use the command below.
+
+```
+nextflow run mop_mod.nf -with-singularity -bg > log.txt
+```
+
+Finally, to perform NanoConsensus analysis, together with the files generated by *mop_mod*, the user must provide the **following inputs**:
 * Reference file (*.fa) ([Check full input](example_input/Reference.fa))
 * Transcript name - should match a fasta ID in the reference file - i.e: *18S*
 * Start position - must be an integer - i.e: *50*
 * End position - must be an integer - i.e: *1492*
 
-These inputs - generated by *NanoMod* - are also required for the analysis:
-* **Epinano output**: both for WT and IVT samples ([Check full input](example_input/Epinano/epinano_WT.tsv.per.site.var.csv))
+These inputs - generated by *mop_mod* - are also required for the analysis:
+* **Epinano output**: both for WT and IVT samples ([Check full input](example_input/RNA002/Epinano/epinano_WT.tsv.per.site.var.csv))
 ```
 #Ref,pos,base,cov,q_mean,q_median,q_std,mis,ins,del
 23S,2515,C,45497.0,5.36995,4.00000,3.97797,0.0822032221904741,0.18715519704595907,0.2058377475437941
@@ -170,7 +215,7 @@ These inputs - generated by *NanoMod* - are also required for the analysis:
 23S,2520,C,45609.0,10.72107,9.00000,7.03936,0.03990440483237957,0.1465938740160933,0.020105680896314326
 ```
 
-* **Nanopolish output**: both for WT and IVT samples ([Check full input](example_input/Nanopolish/Nanopolish_WT.tsv.per.site.var.csv))
+* **Nanopolish output**: both for WT and IVT samples ([Check full input](example_input/RNA002/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv))
 ```
 contig	position	reference_kmer	read_name	median	coverage
 23S	2515	ACATC	1	79.03	271377
@@ -181,7 +226,7 @@ contig	position	reference_kmer	read_name	median	coverage
 23S	2520	CTGGA	1	107.84	125206
 ```
 
-* **Tombo output** ([Check full input](example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv))
+* **Tombo output** ([Check full input](example_input/RNA002/Tombo/WT_IVT_plus_Tombo_Output.tsv))
 ```
 "Ref_Position"	"Chr"	"Position"	"Tombo_SiteScore"	"Coverage_Sample"	"Coverage_IVT"	"Tombo_KmerScore"
 "23S_2515"	"23S"	"2515"	"0.0000"	"37042"	"37884"	0
@@ -192,7 +237,7 @@ contig	position	reference_kmer	read_name	median	coverage
 "23S_2520"	"23S"	"2520"	"0.0006"	"37141"	"37988"	0.0018
 ```
 
-* **Nanocompore output** ([Check full input](example_input/Nanocompore/WT_IVT_nanocompore_results.tsv))
+* **Nanocompore output** ([Check full input](example_input/RNA002/Nanocompore/WT_IVT_nanocompore_results.tsv))
 ```
 pos	chr	genomicPos	ref_id	strand	ref_kmer	GMM_logit_pvalue	GMM_logit_pvalue_context_4	KS_dwell_pvalue	KS_dwell_pvalue_context_4	KS_intensity_pvalue	KS_intensity_pvalue_context_4	MW_dwell_pvalue	MW_dwell_pvalue_context_4	MW_intensity_pvalue	MW_intensity_pvalue_context_4	TT_dwell_pvalue	TT_dwell_pvalue_context_4	TT_intensity_pvalue	TT_intensity_pvalue_context_4	GMM_cov_type	GMM_n_clust	cluster_counts	Logit_LOR
 2515	NA	NA	23S	NA	ACATC	0.9999145725030434	0.9999997713740346	1.0	1.0	1.0	1.0	0.9998988895345491	0.9999961317288804	0.9997948160734869	0.9999943103243797	0.9998967130410295	0.999999547434852	0.9999171708631587	0.9999935368706631	full	2	Parent10_JW3718-90_1:2137/5121__JW3718_1:2284/5121	-0.06649521174331559
@@ -207,24 +252,24 @@ pos	chr	genomicPos	ref_id	strand	ref_kmer	GMM_logit_pvalue	GMM_logit_pvalue_cont
 
 * Default command:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S 
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA002/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/RNA002/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/RNA002/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/RNA002/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/RNA002/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/RNA002/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output m66A-Example -fasta ./example_input/Reference.fa -chr 16S 
 ```
 
 * Use the following command to change the Z-Score threshold (default = *5*) to identify putative modified sites from individual software data:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S -plot --MZS_thr 4
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA002/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/RNA002/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/RNA002/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/RNA002/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/RNA002/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/RNA002/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output m66A-Example -fasta ./example_input/Reference.fa -chr 16S -plot --MZS_thr 4
 ```
 
 * Use the following command to change the NanoConsensus score threshold (default = median(NanoConsensus_Score) * *5*) to filter the final putative modified sites:
 ```
-Rscript NanoConsensus.R -Epi_Sample ./example_input/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output output_name -fasta ./example_input/Reference.fa -chr 18S  -plot --NC_thr 3
+Rscript NanoConsensus.R -Epi_Sample ./example_input/RNA002/Epinano/epinano_WT.tsv.per.site.var.csv -Epi_IVT ./example_input/RNA002/Epinano/epinano_IVT.tsv.per.site.var.csv -NP_Sample ./example_input/RNA002/Nanopolish/Nanopolish_WT_processed_perpos_median.tsv -NP_IVT ./example_input/RNA002/Nanopolish/Nanopolish_IVT_processed_perpos_median.tsv -Tombo ./example_input/RNA002/Tombo/WT_IVT_plus_Tombo_Output.tsv -Nanocomp ./example_input/RNA002/Nanocompore/WT_IVT_nanocompore_results.tsv -ini_pos 50 -fin_pos 1492 -output m66A-Example -fasta ./example_input/Reference.fa -chr 16S  -plot --NC_thr 3
 ```
 
 <a name="expected-output-v1"></a>
 ### Expected output 
 
 By default, *NanoConsensus* generates all files listed below:
-* **Raw_kmers** file: it contains results for all positions across the transcript - ZScores for all softwares, NanoConsensus score, kmer sequence and if the kmer contains the RRACH motif ([Check full output](example_output/m7G-100_16S_MZS-5_rep1_Raw_kmers.txt))
+* **Raw_kmers** file: it contains results for all positions across the transcript - ZScores for all softwares, NanoConsensus score, kmer sequence and if the kmer contains the RRACH motif ([Check full output](example_output/RNA002/m66A-Example_Raw_kmers.txt))
 ```
 "Chr"	"Start"	"End"	"Epinano_RawScore"	"Nanopolish_RawScore"	"Tombo_RawScore"	"Nanocompore_RawScore"	"Epinano_Score"	"Nanopolish_Score"	"Tombo_Score"	"Nanocompore_Score"	"Epinano_Status"	"Nanopolish_Status"	"Tombo_Status"	"Nanocompore_Status"	"Merged_Score"	"Kmer"	"RRACH_motif"
 "16S"	50	54	0.0369794364631788	1.82818269809314	1.61603605003496	4.7381541131775	-0.153261931378237	1.23445293486926	0.0486326005850889	0.0773097901992757	"NO"	"NO"	"NO"	"NO"	0.0110980252190282	"CTAACACAT"	FALSE
@@ -237,7 +282,7 @@ By default, *NanoConsensus* generates all files listed below:
 "16S"	57	61	1.11383029056232	1.26490169831062	0.440136741511926	0.379594344462311	0.0181157608066584	0.394850894234233	-0.0441980728737736	-0.0128307794745501	"NO"	"NO"	"NO"	"NO"	0.00507170736103087	"ATGCAAGTC"	FALSE
 ```
 
-* **Supported_kmers** file: it contains only those regions supported by two or more RNA detection algorithms and whose NanoConsensus score is higher than the specified threshold. All scores reported here are the maximum value found within the reported region. ([Check full output](example_output/m7G-100_16S_MZS-5_rep1_Supported_kmers.txt))
+* **Supported_kmers** file: it contains only those regions supported by two or more RNA detection algorithms and whose NanoConsensus score is higher than the specified threshold. All scores reported here are the maximum value found within the reported region. ([Check full output](example_output/RNA002/m66A-Example_Supported_kmers.txt))
 ```
 "Chr"	"Start"	"End"	"Epinano_RawScore"	"Nanopolish_RawScore"	"Tombo_RawScore"	"Nanocompore_RawScore"	"Epinano_Score"	"Nanopolish_Score"	"Tombo_Score"	"Nanocompore_Score"	"Epinano_Status"	"Nanopolish_Status"	"Tombo_Status"	"Nanocompore_Status"	"Kmer"	"RRACH_motif"
 "16S"	511	536	177.76447909029	2.63628455239892	112.828762333929	600.28039307292	28.1315544965619	2.43897424160257	8.82825531428257	12.3938821290665	"YES"	"NO"	"YES"	"YES"	"AACTCCGTGCCAGCAGCCGCGGTAATACGG"	FALSE
@@ -247,10 +292,10 @@ By default, *NanoConsensus* generates all files listed below:
 ![Zscores_tracks](/img/NanoConsensus_Scores.png)
 
 Additionally, it also creates two directories:
-* **Bedgraph_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo, Nanocompore and NanoConsensus) can be found. Each contains the score per-position from one specific software. These tracks help visualizing scores across the transcript. ([Check output](example_output/Bedgraph_tracks))
+* **Bedgraph_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo, Nanocompore and NanoConsensus) can be found. Each contains the score per-position from one specific software. These tracks help visualizing scores across the transcript. ([Check output](example_output/RNA002/Bedgraph_tracks))
 ![Bedgraph_tracks](/img/Bedgraph_tracks.png)
 
-* **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/Kmer_tracks))
+* **Kmer_tracks**: one bedgraph track per software (Epinano, Nanopolish, Tombo and Nanocompore) can be found. These tracks show all kmers supported by individual algorithms. They help visualizing which softwares are the main contributors to the final results. ([Check output](example_output/RNA002/Kmer_tracks))
 ![Kmer_tracks](/img/Kmers_tracks.png)
 
 ## Required dependencies
