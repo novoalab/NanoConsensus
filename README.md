@@ -168,5 +168,5 @@ Delgado-Tejedor A, Medina R, Begik O, Cozzuto L, Ponomarenko J and Novoa EM. [Na
 
 ## Contact 
 
-Please open an issue in the GitHub repo if you have any questions/doubts/suggestions about how to use this software. Thanks!
+Please open an [issue](https://github.com/novoalab/NanoConsensus/issues) in the GitHub repo if you have any questions/doubts/suggestions. Thanks!
 
