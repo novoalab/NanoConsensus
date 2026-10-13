@@ -13,10 +13,10 @@ Both versions follow the same consensus strategy (see [General Description](#Gen
 ## Table of Contents  
 - [General Description](#General-Description)
 - [Installation](#Installation)
-- [Version 2.0 - NanoConsensus for RNA004 chemistry](#Version-2.0---Nanoconsensus-for-rna004-chemistry)
+- [Version 2.0 - NanoConsensus for RNA004 chemistry](#version-20---nanoconsensus-for-rna004-chemistry)
   - [Running the code](#running-the-code-v2)
   - [Expected output](#expected-output-v2)
-- [Version 1.0 - NanoConsensus for RNA002 chemistry](#version-10--nanoconsensus-for-rna002-chemistry)
+- [Version 1.0 - NanoConsensus for RNA002 chemistry](#version-10---nanoconsensus-for-rna002-chemistry)
   - [Running the code](#running-the-code-v1)
   - [Expected output](#expected-output-v1)
 - [Required dependencies](#Required-dependencies)
